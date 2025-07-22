@@ -1,5 +1,8 @@
 ﻿@page "/"
 @using BlazorUnitedApp.Data;
+@using System.Globalization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<Index> Loc
 <PageTitle>Index</PageTitle>
 
 <EditForm Model="Value" method="POST" OnSubmit="DisplayCustomer" FormName="customer">  
