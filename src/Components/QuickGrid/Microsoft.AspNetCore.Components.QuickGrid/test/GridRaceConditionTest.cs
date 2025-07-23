@@ -2,23 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.AspNetCore.Components.Rendering;
-using Microsoft.AspNetCore.Components.RenderTree;
-using Microsoft.AspNetCore.Components.QuickGrid;
 using Microsoft.AspNetCore.Components.Test.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.AspNetCore.Components.QuickGrid.Tests;
 
 public class GridRaceConditionTest
 {
     private TestRenderer _renderer = new();
-    private TaskCompletionSource _tcs = new();
+    private TaskCompletionSource _tcsRenderFinish = new();
+    private TaskCompletionSource _tcsImportFinish = new();
+    private TaskCompletionSource _tcsDisposeFinish = new();
 
     public GridRaceConditionTest()
     {
-        var testJsRuntime = new TestJsRuntime(_tcs);
+        var testJsRuntime = new TestJsRuntime(_tcsRenderFinish, _tcsImportFinish, _tcsDisposeFinish);
         var serviceProvider = new ServiceCollection()
             .AddSingleton<IJSRuntime>(testJsRuntime)
             .BuildServiceProvider();
@@ -30,11 +29,13 @@ public class GridRaceConditionTest
     {
         var testComponent = new TestComponent();
         var componentId = _renderer.AssignRootComponentId(testComponent);
-
         _renderer.RenderRootComponent(componentId);
-        await Task.Yield();
+
+        await _tcsRenderFinish.Task;
         _renderer.Dispose();
-        _tcs.SetResult();
+        _tcsImportFinish.SetResult();
+        await _tcsDisposeFinish.Task;
+        Assert.True(_tcsDisposeFinish.Task.IsCompletedSuccessfully);
     }
 }
 
@@ -66,8 +67,8 @@ internal class TestComponent : ComponentBase
                 (RenderFragment)(builder => BuildColumnsRenderFragment(builder)));
         builder.CloseComponent();
 
-        builder.OpenComponent<Paginator>(4);
-        builder.AddAttribute(5, "State", _pagination);
+        builder.OpenComponent<Paginator>(5);
+        builder.AddAttribute(6, "State", _pagination);
         builder.CloseComponent();
     }
 
@@ -96,9 +97,11 @@ internal class TestComponent : ComponentBase
     }
 }
 
-internal class TestJsRuntime(TaskCompletionSource tcs) : IJSRuntime
+internal class TestJsRuntime(TaskCompletionSource tcsRenderFinished, TaskCompletionSource tcsImportFinished, TaskCompletionSource tcsDisposeFinished) : IJSRuntime
 {
-    private readonly TaskCompletionSource _tcs = tcs;
+    private readonly TaskCompletionSource _tcsRenderFinished = tcsRenderFinished;
+    private readonly TaskCompletionSource _tcsImportFinished = tcsImportFinished;
+    private readonly TaskCompletionSource _tcsDisposeFinished = tcsDisposeFinished;
 
     public async ValueTask<TValue> InvokeAsync<TValue>(string identifier, object[] args = null)
     { 
@@ -106,8 +109,9 @@ internal class TestJsRuntime(TaskCompletionSource tcs) : IJSRuntime
         {
             if (modulePath == "./_content/Microsoft.AspNetCore.Components.QuickGrid/QuickGrid.razor.js")
             {
-                await _tcs.Task;
-                return (TValue)(object)new TestJSObjectReference();
+                _tcsRenderFinished.SetResult();
+                await _tcsImportFinished.Task;
+                return (TValue)(object)new TestJSObjectReference(_tcsDisposeFinished);
             }
         }
         throw new NotImplementedException();
@@ -119,17 +123,21 @@ internal class TestJsRuntime(TaskCompletionSource tcs) : IJSRuntime
     }
 }
 
-internal class TestJSObjectReference : IJSObjectReference
+internal class TestJSObjectReference(TaskCompletionSource tcsDisposeFinished) : IJSObjectReference
 {
+    private readonly TaskCompletionSource _tcsDisposeFinished = tcsDisposeFinished;
+
     public ValueTask DisposeAsync()
     {
-        throw new NotImplementedException();
+        _tcsDisposeFinished.SetResult();
+        return default;
     }
 
     public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object[] args)
     {
         if (identifier == "init")
         {
+            _tcsDisposeFinished.SetCanceled();
             throw new Exception("JS import was not correctly processed while disposing of the component.");
         }
         throw new NotImplementedException();

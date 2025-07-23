@@ -210,7 +210,8 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
             _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Microsoft.AspNetCore.Components.QuickGrid/QuickGrid.razor.js");
             if (_disposeBool)
             {
-                // If the component has been disposed while JS module was being loaded, we don't need to continue
+                // If the component has been disposed while JS module was being loaded, we need to dispose of the _jsModule and not continue with initialization
+                await _jsModule.DisposeAsync();
                 return;
             }
             _jsEventDisposable = await _jsModule.InvokeAsync<IJSObjectReference>("init", _tableReference);
