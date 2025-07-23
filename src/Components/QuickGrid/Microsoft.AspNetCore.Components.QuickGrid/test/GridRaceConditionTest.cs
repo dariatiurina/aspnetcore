@@ -7,8 +7,9 @@ using Microsoft.AspNetCore.Components.QuickGrid;
 using Microsoft.AspNetCore.Components.Test.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Microsoft.AspNetCore.Components.QuickGrid.Test;
+namespace Microsoft.AspNetCore.Components.QuickGrid.Tests;
 
 public class GridRaceConditionTest
 {
@@ -28,18 +29,17 @@ public class GridRaceConditionTest
     public async Task CanCorrectlyDisposeAsync()
     {
         var testComponent = new TestComponent();
-
         var componentId = _renderer.AssignRootComponentId(testComponent);
+
         _renderer.RenderRootComponent(componentId);
-        await Task.Delay(10);
-        _renderer.RenderRootComponent(componentId);
+        await Task.Yield();
+        _renderer.Dispose();
         _tcs.SetResult();
     }
 }
 
 internal class TestComponent : ComponentBase
 {
-    private bool _firstRender = true;
     private PaginationState _pagination = new() { ItemsPerPage = 2 };
 
     internal class Person
@@ -58,21 +58,17 @@ internal class TestComponent : ComponentBase
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
-        if (_firstRender)
-        {
-            //Render the QuickGrid
-            builder.OpenComponent<QuickGrid<Person>>(0);
-            builder.AddAttribute(1, "Items", _people);
-            builder.AddAttribute(2, "Pagination", _pagination);
-            builder.AddAttribute(3, nameof(QuickGrid<Person>.ChildContent),
+        //Render the QuickGrid
+        builder.OpenComponent<QuickGrid<Person>>(0);
+        builder.AddAttribute(1, "Items", _people);
+        builder.AddAttribute(2, "Pagination", _pagination);
+        builder.AddAttribute(3, nameof(QuickGrid<Person>.ChildContent),
                 (RenderFragment)(builder => BuildColumnsRenderFragment(builder)));
-            builder.CloseComponent();
+        builder.CloseComponent();
 
-            builder.OpenComponent<Paginator>(4);
-            builder.AddAttribute(5, "State", _pagination);
-            builder.CloseComponent();
-            _firstRender = false;
-        }
+        builder.OpenComponent<Paginator>(4);
+        builder.AddAttribute(5, "State", _pagination);
+        builder.CloseComponent();
     }
 
     protected void BuildColumnsRenderFragment(RenderTreeBuilder builder)
@@ -98,21 +94,6 @@ internal class TestComponent : ComponentBase
         builder.AddAttribute(8, nameof(PropertyColumn<Person, int>.Sortable), true);
         builder.CloseComponent();
     }
-
-    public void TriggerRender()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Task.Delay(1);
-            StateHasChanged();
-        }
-        await base.OnAfterRenderAsync(firstRender);
-    }
 }
 
 internal class TestJsRuntime(TaskCompletionSource tcs) : IJSRuntime
@@ -120,20 +101,37 @@ internal class TestJsRuntime(TaskCompletionSource tcs) : IJSRuntime
     private readonly TaskCompletionSource _tcs = tcs;
 
     public async ValueTask<TValue> InvokeAsync<TValue>(string identifier, object[] args = null)
-    {
+    { 
         if (identifier == "import" && args != null && args.Length > 0 && args[0] is string modulePath)
         {
             if (modulePath == "./_content/Microsoft.AspNetCore.Components.QuickGrid/QuickGrid.razor.js")
             {
                 await _tcs.Task;
-                return default!;
+                return (TValue)(object)new TestJSObjectReference();
             }
         }
-        throw new Exception("JS import was not correctly processed while disposing of the component.");
+        throw new NotImplementedException();
     }
 
-    public ValueTask<IJSObjectReference> InvokeAsync(string identifier, params object[] args)
+    public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object[] args)
     {
+        throw new NotImplementedException();
+    }
+}
+
+internal class TestJSObjectReference : IJSObjectReference
+{
+    public ValueTask DisposeAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object[] args)
+    {
+        if (identifier == "init")
+        {
+            throw new Exception("JS import was not correctly processed while disposing of the component.");
+        }
         throw new NotImplementedException();
     }
 
