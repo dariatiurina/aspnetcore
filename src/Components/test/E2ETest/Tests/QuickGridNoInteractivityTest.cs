@@ -123,4 +123,22 @@ public class QuickGridNoInteractivityTest : ServerTestBase<BasicTestAppServerSit
 
         Browser.Equal("1", () => Browser.FindElement(By.CssSelector(".first-paginator .paginator nav > div > strong:nth-child(1)")).Text);
     }
+
+    [Fact]
+    public void DualPaginatorsNavigateAndBothUpdate()
+    {
+        Navigate($"{ServerPathBase}/quickgrid");
+
+        Browser.Equal("1", () => Browser.FindElement(By.CssSelector(".third-top-paginator .paginator nav > div > strong:nth-child(1)")).Text);
+        Browser.Equal("1", () => Browser.FindElement(By.CssSelector(".third-bottom-paginator .paginator nav > div > strong:nth-child(1)")).Text);
+
+        Browser.FindElement(By.CssSelector(".third-top-paginator .go-next")).Click();
+
+        Browser.Equal("2", () => Browser.FindElement(By.CssSelector(".third-top-paginator .paginator nav > div > strong:nth-child(1)")).Text);
+        Browser.Equal("2", () => Browser.FindElement(By.CssSelector(".third-bottom-paginator .paginator nav > div > strong:nth-child(1)")).Text);
+
+        var grid = Browser.FindElement(By.CssSelector("#grid3 .quickgrid"));
+        var firstRow = grid.FindElement(By.CssSelector("tbody > tr:nth-child(1)"));
+        Assert.Equal("12130", firstRow.FindElement(By.CssSelector("td:nth-child(1)")).Text);
+    }
 }

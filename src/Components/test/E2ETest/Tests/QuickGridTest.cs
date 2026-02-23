@@ -245,7 +245,7 @@ public class QuickGridTest : ServerTestBase<ToggleExecutionModeServerFixture<Pro
 
         Browser.Equal("2", () => app.FindElement(By.Id("items-provider-calls")).Text);
     }
-    
+
     [Fact]
     public void OnRowClickTriggersCallback()
     {
@@ -283,5 +283,26 @@ public class QuickGridTest : ServerTestBase<ToggleExecutionModeServerFixture<Pro
             const row = document.querySelector('#grid > table > tbody > tr:nth-child(1)');
             return row ? getComputedStyle(row).cursor : null;");
         Assert.Equal("pointer", cursorStyle);
+    }
+
+    [Fact]
+    public void DualPaginatorsNavigateAndBothUpdate()
+    {
+        app = Browser.MountTestComponent<QuickGridDualPaginatorComponent>();
+
+        var topPaginator = app.FindElement(By.CssSelector(".top-paginator .paginator"));
+        var bottomPaginator = app.FindElement(By.CssSelector(".bottom-paginator .paginator"));
+
+        Browser.Equal("1", () => topPaginator.FindElement(By.CssSelector("nav > div > strong:nth-child(1)")).Text);
+        Browser.Equal("1", () => bottomPaginator.FindElement(By.CssSelector("nav > div > strong:nth-child(1)")).Text);
+
+        topPaginator.FindElement(By.CssSelector(".go-next")).Click();
+
+        Browser.Equal("2", () => topPaginator.FindElement(By.CssSelector("nav > div > strong:nth-child(1)")).Text);
+        Browser.Equal("2", () => bottomPaginator.FindElement(By.CssSelector("nav > div > strong:nth-child(1)")).Text);
+
+        var grid = app.FindElement(By.CssSelector("#grid > table"));
+        var firstRow = grid.FindElement(By.CssSelector("tbody > tr:nth-child(1)"));
+        Assert.Equal("12130", firstRow.FindElement(By.CssSelector("td:nth-child(1)")).Text);
     }
 }
