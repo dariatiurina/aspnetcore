@@ -44,6 +44,16 @@ internal partial class SessionCascadingValueSupplier
 
         var sessionKey = attribute.Name ?? parameterInfo.PropertyName;
         var componentType = componentState.Component.GetType();
+
+        var propertyType = parameterInfo.PropertyType;
+        var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+        if (underlyingType != typeof(object) && !underlyingType.IsAbstract && !_serializer.CanSerialize(underlyingType))
+        {
+            throw new InvalidOperationException(
+                $"The property '{parameterInfo.PropertyName}' on component '{componentType}' is annotated with '[SupplyParameterFromSession]' but its type '{propertyType}' is not supported for session storage.");
+        }
+
         var getter = _propertyGetterCache.GetOrAdd((componentType, parameterInfo.PropertyName), PropertyGetterFactory);
         Func<object?> valueGetter = () => getter.GetValue(componentState.Component);
         RegisterValueCallback(sessionKey, valueGetter);
@@ -87,23 +97,31 @@ internal partial class SessionCascadingValueSupplier
         foreach (var (key, valueGetter) in _valueCallbacks)
         {
             var sessionKey = key.ToLowerInvariant();
+            object? value;
             try
             {
-                var value = valueGetter();
-                if (value is not null)
-                {
-                    var bytes = _serializer.SerializeValue(value, value.GetType());
-                    session.Set(sessionKey, bytes);
-                }
-                else
-                {
-                    session.Remove(sessionKey);
-                }
+                value = valueGetter();
             }
             catch (Exception ex)
             {
                 Log.SessionPersistFail(_logger, ex);
+                continue;
             }
+
+            if (value is null)
+            {
+                session.Remove(sessionKey);
+                continue;
+            }
+
+            var valueType = value.GetType();
+            if (!_serializer.CanSerialize(valueType))
+            {
+                throw new InvalidOperationException($"Session cannot store values of type '{valueType}'.");
+            }
+
+            var bytes = _serializer.SerializeValue(value, valueType);
+            session.Set(sessionKey, bytes);
         }
         return Task.CompletedTask;
     }

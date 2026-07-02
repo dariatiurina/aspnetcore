@@ -122,17 +122,14 @@ public class SessionCascadingValueSupplierTest
     }
 
     [Fact]
-    public async Task PersistAllValues_ContinuesOnSerializationException()
+    public async Task PersistAllValues_Throws_ForUnsupportedType()
     {
         _supplier.RegisterValueCallback("key1", () => new IntPtr(42));
-        _supplier.RegisterValueCallback("key2", () => "value2");
 
         var httpContext = CreateHttpContextWithSession();
         _supplier.SetRequestContext(httpContext);
-        await _supplier.PersistAllValues();
 
-        Assert.Null(httpContext.Session.GetString("key1"));
-        AssertSessionValue(httpContext.Session, "key2", "value2");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _supplier.PersistAllValues());
     }
 
     [Fact]

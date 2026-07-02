@@ -40,6 +40,37 @@ public class SessionSubscriptionTest
             () => _component.Value);
     }
 
+    private void CreateSubscriptionForPropertyType(Type propertyType)
+    {
+        var renderer = new TestRenderer();
+        var componentState = new ComponentState(renderer, 0, _component, null);
+        var attribute = new SupplyParameterFromSessionAttribute();
+        var parameterInfo = new CascadingParameterInfo(attribute, nameof(TestComponent.Value), propertyType);
+        _supplier.CreateSubscription(componentState, attribute, parameterInfo);
+    }
+
+    [Fact]
+    public void CreateSubscription_Throws_ForUnsupportedType()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => CreateSubscriptionForPropertyType(typeof(CustomObject)));
+        Assert.Contains("not supported", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(typeof(int))]
+    [InlineData(typeof(int?))]
+    [InlineData(typeof(TestEnum))]
+    [InlineData(typeof(TestEnum?))]
+    [InlineData(typeof(List<int>))]
+    [InlineData(typeof(object))]
+    [InlineData(typeof(IList<int>))]
+    public void CreateSubscription_DoesNotThrow_ForSupportedOrPolymorphicType(Type propertyType)
+    {
+        var exception = Record.Exception(() => CreateSubscriptionForPropertyType(propertyType));
+
+        Assert.Null(exception);
+    }
+
     [Fact]
     public void GetValue_ReturnsNull_WhenHttpContextNotSet()
     {
@@ -178,6 +209,11 @@ public class SessionSubscriptionTest
         public void Attach(RenderHandle renderHandle) { }
 
         public Task SetParametersAsync(ParameterView parameters) => Task.CompletedTask;
+    }
+
+    private class CustomObject
+    {
+        public int Value { get; set; }
     }
 
     public enum TestEnum
