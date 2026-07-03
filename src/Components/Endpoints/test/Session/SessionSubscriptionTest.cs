@@ -148,6 +148,20 @@ public class SessionSubscriptionTest
     }
 
     [Fact]
+    public void GetValue_RestoresEnumArray_FromSession()
+    {
+        var httpContext = CreateHttpContextWithSession();
+        SetSessionValue(httpContext, "statuses", new[] { TestEnum.Active, TestEnum.Inactive }, typeof(TestEnum[]));
+        _supplier.SetRequestContext(httpContext);
+
+        var subscription = CreateSubscription("statuses", typeof(TestEnum[]));
+        var result = subscription.GetCurrentValue();
+
+        var array = Assert.IsType<TestEnum[]>(result);
+        Assert.Equal(new[] { TestEnum.Active, TestEnum.Inactive }, array);
+    }
+
+    [Fact]
     public void GetValue_ReturnsNull_WhenDeserializationFails()
     {
         var httpContext = CreateHttpContextWithSession();

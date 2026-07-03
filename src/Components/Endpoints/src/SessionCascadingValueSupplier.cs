@@ -146,6 +146,7 @@ internal partial class SessionCascadingValueSupplier
         private readonly string _sessionKey;
         private readonly Type _underlyingType;
         private readonly bool _isEnum;
+        private readonly bool _isEnumArray;
         private readonly Func<object?> _currentValueGetter;
         private bool _delivered;
 
@@ -159,6 +160,7 @@ internal partial class SessionCascadingValueSupplier
             _sessionKey = sessionKey;
             _underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
             _isEnum = _underlyingType.IsEnum;
+            _isEnumArray = _underlyingType.IsArray && _underlyingType.GetElementType()!.IsEnum;
             _currentValueGetter = currentValueGetter;
         }
 
@@ -192,6 +194,17 @@ internal partial class SessionCascadingValueSupplier
                 if (_isEnum && value is int intValue)
                 {
                     return Enum.ToObject(_underlyingType, intValue);
+                }
+
+                if (_isEnumArray && value is int[] intArray)
+                {
+                    var elementType = _underlyingType.GetElementType()!;
+                    var enumArray = Array.CreateInstance(elementType, intArray.Length);
+                    for (var i = 0; i < intArray.Length; i++)
+                    {
+                        enumArray.SetValue(Enum.ToObject(elementType, intArray[i]), i);
+                    }
+                    return enumArray;
                 }
 
                 if (!_underlyingType.IsAssignableFrom(value.GetType()))
