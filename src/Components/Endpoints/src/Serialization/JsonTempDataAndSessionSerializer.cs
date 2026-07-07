@@ -12,6 +12,7 @@ internal sealed class JsonTempDataAndSessionSerializer : ITempDataAndSessionSeri
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
+    // These are taken from the set of types supported by TempDataDictionary in ASP.NET Core MVC
     private static readonly Dictionary<Type, string> _scalarNames = new()
     {
         [typeof(int)] = "int",
