@@ -26,9 +26,9 @@ internal sealed class JsonTempDataAndSessionSerializer : ITempDataAndSessionSeri
     private static readonly HashSet<Type> _int32EnumUnderlyingTypes =
         [typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int)];
 
-    // Compact, stable type tokens (e.g. "list[int]") are persisted instead of Type.FullName, which for generic
-    // types embeds assembly version and public key token, bloating payloads and breaking across runtime upgrades.
-    // _typeToName is the authoritative allow-list of directly-storable types.
+    // _typeToName is the allow-list of storable types. Compact tokens (e.g. "list[int]") keep payloads
+    // small for the size-limited cookie provider, and deserialization only ever resolves allow-listed
+    // types, so a tampered payload can't trigger arbitrary type resolution the way Type.FullName would.
     private static readonly Dictionary<string, Type> _nameToType = BuildNameToType();
     private static readonly Dictionary<Type, string> _typeToName = BuildTypeToName(_nameToType);
 
@@ -181,7 +181,7 @@ internal sealed class JsonTempDataAndSessionSerializer : ITempDataAndSessionSeri
         var valueType = type ?? value.GetType();
         if (!TryGetStorageType(valueType, out var storageType))
         {
-            throw new InvalidOperationException($"Cannot serialize type '{valueType}'.");
+            throw new UnsupportedSerializationTypeException(valueType);
         }
 
         var writeValue = NormalizeEnums(value, valueType, storageType);

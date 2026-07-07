@@ -55,14 +55,6 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
     public void SaveTempData(HttpContext context, IDictionary<string, (object? Value, Type? Type)> values)
     {
         ArgumentNullException.ThrowIfNull(context);
-        foreach (var kvp in values)
-        {
-            var (value, type) = kvp.Value;
-            if (value is not null && !_tempDataSerializer.CanSerialize(type ?? value.GetType()))
-            {
-                throw new InvalidOperationException($"TempData cannot store values of type '{type ?? value.GetType()}'.");
-            }
-        }
 
         var session = context.Session;
         if (values.Count == 0)
@@ -71,7 +63,16 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
             return;
         }
 
-        var bytes = _tempDataSerializer.SerializeData(values);
+        byte[] bytes;
+        try
+        {
+            bytes = _tempDataSerializer.SerializeData(values);
+        }
+        catch (UnsupportedSerializationTypeException ex)
+        {
+            throw new InvalidOperationException($"TempData cannot store values of type '{ex.UnsupportedType}'.", ex);
+        }
+
         session.Set(TempDataSessionStateKey, bytes);
         Log.TempDataSessionSaveSuccess(_logger);
     }

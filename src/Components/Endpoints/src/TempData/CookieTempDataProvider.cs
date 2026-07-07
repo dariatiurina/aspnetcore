@@ -111,14 +111,6 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        foreach (var kvp in values)
-        {
-            var (value, type) = kvp.Value;
-            if (value is not null && !_tempDataSerializer.CanSerialize(type ?? value.GetType()))
-            {
-                throw new InvalidOperationException($"TempData cannot store values of type '{type ?? value.GetType()}'.");
-            }
-        }
         var cookieName = _options.TempDataCookie.Name ?? CookieName;
         var cookieOptions = _options.TempDataCookie.Build(context);
         SetCookiePath(context, cookieOptions);
@@ -129,7 +121,16 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
             return;
         }
 
-        var bytes = _tempDataSerializer.SerializeData(values);
+        byte[] bytes;
+        try
+        {
+            bytes = _tempDataSerializer.SerializeData(values);
+        }
+        catch (UnsupportedSerializationTypeException ex)
+        {
+            throw new InvalidOperationException($"TempData cannot store values of type '{ex.UnsupportedType}'.", ex);
+        }
+
         var protectedBytes = _dataProtector.Protect(bytes);
         var encodedValue = Base64Url.EncodeToString(protectedBytes);
         _chunkingCookieManager.AppendResponseCookie(context, cookieName, encodedValue, cookieOptions);

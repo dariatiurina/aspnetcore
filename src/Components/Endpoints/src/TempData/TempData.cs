@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Linq;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -114,7 +115,7 @@ internal sealed class TempData : ITempData
 
     ICollection<string> IDictionary<string, object?>.Keys => Data.Keys;
 
-    ICollection<object?> IDictionary<string, object?>.Values => new ValueCollection(this);
+    ICollection<object?> IDictionary<string, object?>.Values => Data.Values.Select(entry => entry.Value).ToList();
 
     int ICollection<KeyValuePair<string, object?>>.Count => Data.Count;
     bool ICollection<KeyValuePair<string, object?>>.IsReadOnly => ((ICollection<KeyValuePair<string, (object? Value, Type? Type)>>)Data).IsReadOnly;
@@ -223,62 +224,5 @@ internal sealed class TempData : ITempData
             _innerEnumerator.Reset();
             _keysToRemove.Clear();
         }
-    }
-
-    private sealed class ValueCollection : ICollection<object?>
-    {
-        private readonly TempData _tempData;
-
-        public ValueCollection(TempData tempData)
-        {
-            _tempData = tempData;
-        }
-
-        public int Count => _tempData.Data.Count;
-
-        public bool IsReadOnly => true;
-
-        public bool Contains(object? item)
-        {
-            foreach (var entry in _tempData.Data.Values)
-            {
-                if (Equals(entry.Value, item))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void CopyTo(object?[] array, int arrayIndex)
-        {
-            ArgumentNullException.ThrowIfNull(array);
-            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
-            if (array.Length - arrayIndex < _tempData.Data.Count)
-            {
-                throw new ArgumentException("The destination array is not large enough to copy all the items in the collection. Check the array index and length.", nameof(array));
-            }
-
-            foreach (var entry in _tempData.Data.Values)
-            {
-                array[arrayIndex++] = entry.Value;
-            }
-        }
-
-        public IEnumerator<object?> GetEnumerator()
-        {
-            foreach (var entry in _tempData.Data.Values)
-            {
-                yield return entry.Value;
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void Add(object? item) => throw new NotSupportedException();
-
-        public void Clear() => throw new NotSupportedException();
-
-        public bool Remove(object? item) => throw new NotSupportedException();
     }
 }

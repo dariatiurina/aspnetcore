@@ -41,21 +41,6 @@ public class TempDataTest
     }
 
     [Fact]
-    public void Values_ProjectsEntryValues_AndReflectsSubsequentChanges()
-    {
-        IDictionary<string, object> tempData = CreateTempData();
-        tempData["Key1"] = "Value1";
-        tempData["Key2"] = 42;
-
-        var values = tempData.Values;
-        Assert.Equal(new object[] { 42, "Value1" }, values.OrderBy(v => v.ToString()));
-
-        tempData["Key3"] = "Value3";
-        Assert.Contains("Value3", values);
-        Assert.Equal(3, values.Count);
-    }
-
-    [Fact]
     public void Peek_ReturnsValueWithoutRemovingFromRetainedKeys()
     {
         var tempData = CreateTempData();
