@@ -43,19 +43,22 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
         ArgumentNullException.ThrowIfNull(context);
         var cookieName = _options.TempDataCookie.Name ?? CookieName;
 
+        if (!context.Request.Cookies.ContainsKey(cookieName))
+        {
+            Log.TempDataCookieNotFound(_logger, cookieName);
+            return ReadOnlyDictionary<string, object?>.Empty;
+        }
+
+        var serializedDataFromCookie = _chunkingCookieManager.GetRequestCookie(context, cookieName);
+        if (serializedDataFromCookie is null)
+        {
+            return ReadOnlyDictionary<string, object?>.Empty;
+        }
+
+        // Only the decode/unprotect/deserialize of untrusted cookie data is guarded: data errors
+        // fall back to empty, while unexpected errors surface instead of being silently swallowed.
         try
         {
-            if (!context.Request.Cookies.ContainsKey(cookieName))
-            {
-                Log.TempDataCookieNotFound(_logger, cookieName);
-                return ReadOnlyDictionary<string, object?>.Empty;
-            }
-            var serializedDataFromCookie = _chunkingCookieManager.GetRequestCookie(context, cookieName);
-            if (serializedDataFromCookie is null)
-            {
-                return ReadOnlyDictionary<string, object?>.Empty;
-            }
-
             byte[]? rentedDecodeBuffer = null;
             var maxDecodedSize = Base64Url.GetMaxDecodedLength(serializedDataFromCookie.Length);
             var decodeBuffer = maxDecodedSize <= 256
