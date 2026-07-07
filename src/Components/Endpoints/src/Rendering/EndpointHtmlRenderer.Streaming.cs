@@ -310,21 +310,21 @@ internal partial class EndpointHtmlRenderer
             pausedCapture = true;
             captureWriter.PauseCapture();
 
-            // A validation-only writer (a disabled boundary) records nothing; the hole-policy error
-            // already surfaced in the condition above. Only a real capture records the hole.
+            // A validation-only writer (a disabled boundary) records nothing; the live-cached-component
+            // validation error already surfaced in the condition above. Only a real capture records the live cached component.
             if (!captureWriter.IsValidationOnly)
             {
-                // An interactive hole is wrapped in an SSRRenderModeBoundary that owns the inner component
-                // type and render mode; a plain [CacheBoundaryPolicy] hole is the component itself with no
-                // render mode.
-                var holeBoundary = componentState.Component as SSRRenderModeBoundary;
-                var holeComponentType = holeBoundary?.ComponentType ?? componentState.Component.GetType();
+                // An interactive live cached component is wrapped in an SSRRenderModeBoundary that owns the inner
+                // component type and render mode; a plain [CacheBoundaryLiveComponent] live cached component is the component
+                // itself with no render mode.
+                var liveCachedComponentBoundary = componentState.Component as SSRRenderModeBoundary;
+                var liveCachedComponentType = liveCachedComponentBoundary?.ComponentType ?? componentState.Component.GetType();
 
-                var holeCapture = TryCaptureHoleParameterFrames(componentState)
+                var liveCachedComponentCapture = TryCaptureLiveCachedComponentParameterFrames(componentState)
                     ?? throw new InvalidOperationException(
-                        $"CacheBoundary could not locate the hole component '{holeComponentType.FullName}' in its parent's render tree.");
+                        $"CacheBoundary could not locate the live cached component '{liveCachedComponentType.FullName}' in its parent's render tree.");
 
-                captureWriter.CreateHole(holeComponentType, holeBoundary?.RenderMode, holeCapture, GetRenderFragmentSerializationLogger());
+                captureWriter.CreateLiveCachedComponent(liveCachedComponentType, liveCachedComponentBoundary?.RenderMode, liveCachedComponentCapture, GetRenderFragmentSerializationLogger());
             }
         }
 
@@ -382,10 +382,10 @@ internal partial class EndpointHtmlRenderer
         }
     }
 
-    // Captures frames for a hole component from its parent's render tree
-    private RenderFragmentCapture? TryCaptureHoleParameterFrames(EndpointComponentState holeComponentState)
+    // Captures frames for a live cached component from its parent's render tree
+    private RenderFragmentCapture? TryCaptureLiveCachedComponentParameterFrames(EndpointComponentState liveCachedComponentState)
     {
-        if (holeComponentState.ParentComponentState is not { } parentComponentState)
+        if (liveCachedComponentState.ParentComponentState is not { } parentComponentState)
         {
             return null;
         }
@@ -395,7 +395,7 @@ internal partial class EndpointHtmlRenderer
         for (var i = 0; i < frames.Count; i++)
         {
             ref readonly var frame = ref array[i];
-            if (frame.FrameType is RenderTreeFrameType.Component && ReferenceEquals(frame.Component, holeComponentState.Component))
+            if (frame.FrameType is RenderTreeFrameType.Component && ReferenceEquals(frame.Component, liveCachedComponentState.Component))
             {
                 var length = frame.ComponentSubtreeLength;
                 var slice = new RenderTreeFrame[length];

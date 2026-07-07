@@ -5,7 +5,7 @@ namespace Microsoft.AspNetCore.Components;
 
 /// <summary>
 /// Describes which vary-by dimensions are active on an enclosing CacheBoundary.
-/// Used as flags in <see cref="CacheBoundaryPolicyAttribute"/> to express conditional
+/// Used as flags in <see cref="CacheBoundaryLiveComponentAttribute"/> to express conditional
 /// cache exclusion, and internally to communicate the active dimensions to the renderer.
 /// </summary>
 [Flags]

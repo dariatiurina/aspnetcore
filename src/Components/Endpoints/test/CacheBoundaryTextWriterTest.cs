@@ -15,11 +15,11 @@ namespace Microsoft.AspNetCore.Components.Endpoints;
 public class CacheBoundaryTextWriterTest
 {
     [Fact]
-    public void CreateHole_HoleWithRenderFragmentParameter_Throws()
+    public void CreateLiveCachedComponent_LiveCachedComponentWithRenderFragmentParameter_Throws()
     {
         var capture = new RenderFragmentCapture(CaptureFramesFor(builder =>
         {
-            builder.OpenComponent<TestRenderFragmentHole>(7);
+            builder.OpenComponent<TestRenderFragmentLiveCachedComponent>(7);
             builder.AddAttribute(8, "ChildContent", (RenderFragment)(b => b.AddContent(0, "inner")));
             builder.CloseComponent();
         }));
@@ -28,16 +28,16 @@ public class CacheBoundaryTextWriterTest
         writer.StartCapture();
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            writer.CreateHole(typeof(TestRenderFragmentHole), renderMode: null, capture, NullLogger.Instance));
+            writer.CreateLiveCachedComponent(typeof(TestRenderFragmentLiveCachedComponent), renderMode: null, capture, NullLogger.Instance));
         Assert.Contains("RenderFragment parameter", ex.Message);
     }
 
     [Fact]
-    public void CreateHole_HoleWithGenericRenderFragment_Throws()
+    public void CreateLiveCachedComponent_LiveCachedComponentWithGenericRenderFragment_Throws()
     {
         var capture = new RenderFragmentCapture(CaptureFramesFor(builder =>
         {
-            builder.OpenComponent<TestRenderFragmentHole>(7);
+            builder.OpenComponent<TestRenderFragmentLiveCachedComponent>(7);
             builder.AddAttribute(8, "ItemTemplate", (RenderFragment<string>)(item => b => b.AddContent(0, item)));
             builder.CloseComponent();
         }));
@@ -45,38 +45,38 @@ public class CacheBoundaryTextWriterTest
         var writer = new CacheBoundaryTextWriter(new StringWriter(), CacheBoundaryVaryBy.None);
         writer.StartCapture();
 
-        var ex = Assert.Throws<InvalidOperationException>(() => writer.CreateHole(typeof(TestRenderFragmentHole), renderMode: null, capture, NullLogger.Instance));
+        var ex = Assert.Throws<InvalidOperationException>(() => writer.CreateLiveCachedComponent(typeof(TestRenderFragmentLiveCachedComponent), renderMode: null, capture, NullLogger.Instance));
         Assert.Contains("RenderFragment", ex.Message);
     }
 
     [Fact]
-    public void CreateHole_HoleWithoutRenderFragmentParameter_SerializesNode()
+    public void CreateLiveCachedComponent_LiveCachedComponentWithoutRenderFragmentParameter_SerializesNode()
     {
         var capture = new RenderFragmentCapture(CaptureFramesFor(builder =>
         {
-            builder.OpenComponent<TestRenderFragmentHole>(7);
+            builder.OpenComponent<TestRenderFragmentLiveCachedComponent>(7);
             builder.AddComponentParameter(8, "Title", "hello");
             builder.CloseComponent();
         }));
 
         var writer = new CacheBoundaryTextWriter(new StringWriter(), CacheBoundaryVaryBy.None);
         writer.StartCapture();
-        writer.CreateHole(typeof(TestRenderFragmentHole), renderMode: null, capture, NullLogger.Instance);
+        writer.CreateLiveCachedComponent(typeof(TestRenderFragmentLiveCachedComponent), renderMode: null, capture, NullLogger.Instance);
         writer.StopCapture();
 
         var fragment = writer.GetSerializedRenderFragment();
         var json = JsonSerializer.Serialize(fragment, ServerComponentSerializationSettings.JsonSerializationOptions);
-        Assert.Contains(nameof(TestRenderFragmentHole), json);
+        Assert.Contains(nameof(TestRenderFragmentLiveCachedComponent), json);
         Assert.Contains("hello", json);
     }
 
     [Fact]
-    public void GetSerializedRenderFragment_InterleavesMarkupAndHolesInRenderOrder()
+    public void GetSerializedRenderFragment_InterleavesMarkupAndLiveCachedComponentsInRenderOrder()
     {
         var capture = new RenderFragmentCapture(CaptureFramesFor(builder =>
         {
-            builder.OpenComponent<TestRenderFragmentHole>(7);
-            builder.AddComponentParameter(8, "Title", "hole-value");
+            builder.OpenComponent<TestRenderFragmentLiveCachedComponent>(7);
+            builder.AddComponentParameter(8, "Title", "live-cached-value");
             builder.CloseComponent();
         }));
 
@@ -84,7 +84,7 @@ public class CacheBoundaryTextWriterTest
         writer.StartCapture();
         writer.Write("<p>before</p>");
         writer.PauseCapture();
-        writer.CreateHole(typeof(TestRenderFragmentHole), renderMode: null, capture, NullLogger.Instance);
+        writer.CreateLiveCachedComponent(typeof(TestRenderFragmentLiveCachedComponent), renderMode: null, capture, NullLogger.Instance);
         writer.StartCapture();
         writer.Write("<p>after</p>");
         writer.StopCapture();
@@ -92,9 +92,9 @@ public class CacheBoundaryTextWriterTest
         var fragment = writer.GetSerializedRenderFragment();
         var json = JsonSerializer.Serialize(fragment, ServerComponentSerializationSettings.JsonSerializationOptions);
         var beforeIndex = json.IndexOf("before", StringComparison.Ordinal);
-        var holeIndex = json.IndexOf("hole-value", StringComparison.Ordinal);
+        var liveCachedComponentIndex = json.IndexOf("live-cached-value", StringComparison.Ordinal);
         var afterIndex = json.IndexOf("after", StringComparison.Ordinal);
-        Assert.True(beforeIndex >= 0 && holeIndex > beforeIndex && afterIndex > holeIndex);
+        Assert.True(beforeIndex >= 0 && liveCachedComponentIndex > beforeIndex && afterIndex > liveCachedComponentIndex);
     }
 
     [Fact]
@@ -134,8 +134,8 @@ public class CacheBoundaryTextWriterTest
         return slice;
     }
 
-    [CacheBoundaryPolicy]
-    private sealed class TestRenderFragmentHole : IComponent
+    [CacheBoundaryLiveComponent]
+    private sealed class TestRenderFragmentLiveCachedComponent : IComponent
     {
         [Parameter] public string? Title { get; set; }
 

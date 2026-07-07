@@ -16,8 +16,8 @@ public class IsCacheableComponentTest
     [Fact]
     public void Attribute_NoVaryBy_IsNotCacheable()
     {
-        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(UnconditionalHole), CacheBoundaryVaryBy.None));
-        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(UnconditionalHole), CacheBoundaryVaryBy.User));
+        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(UnconditionalLiveCachedComponent), CacheBoundaryVaryBy.None));
+        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(UnconditionalLiveCachedComponent), CacheBoundaryVaryBy.User));
     }
 
     [Fact]
@@ -30,8 +30,8 @@ public class IsCacheableComponentTest
     [Fact]
     public void Attribute_VaryBy_NotCacheableWhenNotCovered_CacheableWhenCovered()
     {
-        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(ConditionalHole), CacheBoundaryVaryBy.None));
-        Assert.True(CacheBoundaryService.IsCacheableComponent(typeof(ConditionalHole), CacheBoundaryVaryBy.User));
+        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(ConditionalLiveCachedComponent), CacheBoundaryVaryBy.None));
+        Assert.True(CacheBoundaryService.IsCacheableComponent(typeof(ConditionalLiveCachedComponent), CacheBoundaryVaryBy.User));
     }
 
     [Fact]
@@ -40,8 +40,8 @@ public class IsCacheableComponentTest
         var partial = CacheBoundaryVaryBy.User;
         var full = CacheBoundaryVaryBy.User | CacheBoundaryVaryBy.Query;
 
-        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(MultiDimensionHole), partial));
-        Assert.True(CacheBoundaryService.IsCacheableComponent(typeof(MultiDimensionHole), full));
+        Assert.False(CacheBoundaryService.IsCacheableComponent(typeof(MultiDimensionLiveCachedComponent), partial));
+        Assert.True(CacheBoundaryService.IsCacheableComponent(typeof(MultiDimensionLiveCachedComponent), full));
     }
 
     [Fact]
@@ -51,13 +51,13 @@ public class IsCacheableComponentTest
             CacheBoundaryService.IsCacheableComponent(typeof(DerivedThrowingComponent), CacheBoundaryVaryBy.None));
     }
 
-    [CacheBoundaryPolicy]
-    private class UnconditionalHole : ComponentBase
+    [CacheBoundaryLiveComponent]
+    private class UnconditionalLiveCachedComponent : ComponentBase
     {
         protected override void BuildRenderTree(RenderTreeBuilder builder) { }
     }
 
-    [CacheBoundaryPolicy(Disallow = true)]
+    [CacheBoundaryLiveComponent(Disallow = true)]
     private class ThrowingComponent : ComponentBase
     {
         protected override void BuildRenderTree(RenderTreeBuilder builder) { }
@@ -65,14 +65,14 @@ public class IsCacheableComponentTest
 
     private sealed class DerivedThrowingComponent : ThrowingComponent { }
 
-    [CacheBoundaryPolicy(VaryBy = CacheBoundaryVaryBy.User)]
-    private class ConditionalHole : ComponentBase
+    [CacheBoundaryLiveComponent(VaryBy = CacheBoundaryVaryBy.User)]
+    private class ConditionalLiveCachedComponent : ComponentBase
     {
         protected override void BuildRenderTree(RenderTreeBuilder builder) { }
     }
 
-    [CacheBoundaryPolicy(VaryBy = CacheBoundaryVaryBy.User | CacheBoundaryVaryBy.Query)]
-    private class MultiDimensionHole : ComponentBase
+    [CacheBoundaryLiveComponent(VaryBy = CacheBoundaryVaryBy.User | CacheBoundaryVaryBy.Query)]
+    private class MultiDimensionLiveCachedComponent : ComponentBase
     {
         protected override void BuildRenderTree(RenderTreeBuilder builder) { }
     }

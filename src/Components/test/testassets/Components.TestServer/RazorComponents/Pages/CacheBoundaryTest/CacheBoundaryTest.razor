@@ -7,7 +7,7 @@
 <div id="test-1">
     <CacheBoundary ExpiresAfter="TimeSpan.FromHours(1)" VaryByQuery="testId">
         <p class="cached">@Guid.NewGuid()</p>
-        <HoleComponent CssClass="not-cache-component" />
+        <LiveCachedComponent CssClass="not-cache-component" />
     </CacheBoundary>
     <p class="not-cached">@Guid.NewGuid()</p>
 </div>
@@ -15,7 +15,7 @@
 <div id="test-2">
     <CacheBoundary ExpiresAfter="TimeSpan.FromHours(1)" VaryByQuery="testId" Enabled="false">
         <p class="cached">@Guid.NewGuid()</p>
-        <HoleComponent CssClass="not-cache-component" />
+        <LiveCachedComponent CssClass="not-cache-component" />
     </CacheBoundary>
     <p class="not-cached">@Guid.NewGuid()</p>
 </div>
@@ -26,7 +26,7 @@
             <input id="message-input" type="text" name="Message" />
             <button id="submit" type="submit">Submit</button>
         </CacheBoundary>
-        <HoleComponent Id="message" Content="@Message" />
+        <LiveCachedComponent Id="message" Content="@Message" />
     </EditForm>
 </div>
 
@@ -48,21 +48,21 @@
         {
             var index = i;
             var label = index == 0 ? "first" : "second";
-            <HoleComponent CssClass="@($"hole-{index}")" Content="@label" />
+            <LiveCachedComponent CssClass="@($"live-cached-{index}")" Content="@label" />
         }
     </CacheBoundary>
 </div>
 
 <div id="test-7">
     <CacheBoundary ExpiresAfter="TimeSpan.FromHours(1)" VaryByQuery="testId">
-        <HardcodedHolePanel />
+        <HardcodedLiveCachedComponentPanel />
     </CacheBoundary>
 </div>
 
 <div id="test-8">
     <CacheBoundary ExpiresAfter="TimeSpan.FromHours(1)" VaryByQuery="testId">
         <p class="cached-static">@Guid.NewGuid()</p>
-        <StreamingHoleComponent CssClass="streaming-hole" />
+        <StreamingLiveCachedComponent CssClass="streaming-live-cached" />
     </CacheBoundary>
 </div>
 

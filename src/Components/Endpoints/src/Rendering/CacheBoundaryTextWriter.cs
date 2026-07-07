@@ -9,9 +9,9 @@ namespace Microsoft.AspNetCore.Components.Endpoints;
 
 internal sealed class CacheBoundaryTextWriter : TextWriter
 {
-    // Approximate per-hole footprint used only for cache size accounting; holes are component nodes
-    // rather than strings, so they have no captured length to measure directly.
-    private const int HoleSizeEstimate = 256;
+    // Approximate per-live-cached-component footprint used only for cache size accounting; live cached components
+    // are component nodes rather than strings, so they have no captured length to measure directly.
+    private const int LiveCachedComponentSizeEstimate = 256;
 
     private readonly TextWriter _innerWriter;
     private readonly StringBuilder _buffer = new();
@@ -86,37 +86,37 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
         _validateOnly = true;
     }
 
-    public void CreateHole(Type componentType, IComponentRenderMode? renderMode, RenderFragmentCapture capture, ILogger renderFragmentSerializationLogger)
+    public void CreateLiveCachedComponent(Type componentType, IComponentRenderMode? renderMode, RenderFragmentCapture capture, ILogger renderFragmentSerializationLogger)
     {
-        ThrowIfHoleHasRenderFragmentParameter(componentType, capture);
+        ThrowIfLiveCachedComponentHasRenderFragmentParameter(componentType, capture);
 
-        RenderTreeNode? holeNode = null;
+        RenderTreeNode? liveCachedComponentNode = null;
         foreach (var node in RenderFragmentSerializer.SerializeFrames(capture, renderFragmentSerializationLogger))
         {
             if (node.Type is "component")
             {
-                holeNode = node;
+                liveCachedComponentNode = node;
                 break;
             }
         }
 
-        if (holeNode is null)
+        if (liveCachedComponentNode is null)
         {
             throw new InvalidOperationException(
-                $"CacheBoundary could not serialize the hole component '{componentType.FullName}' from its parent's render tree.");
+                $"CacheBoundary could not serialize the live cached component '{componentType.FullName}' from its parent's render tree.");
         }
 
         // The serializer fills RenderModeName from an inline @rendermode frame. For components that
         // declare their render mode via [RenderModeAttribute] instead, the capture has no render-mode
         // frame, so patch it from the boundary's runtime render mode.
         var renderModeName = RenderFragmentSerializer.GetRenderModeName(renderMode);
-        if (renderModeName is not null && holeNode.RenderModeName is null)
+        if (renderModeName is not null && liveCachedComponentNode.RenderModeName is null)
         {
-            holeNode.RenderModeName = renderModeName;
-            holeNode.Prerender = RenderFragmentSerializer.GetRenderModePrerender(renderMode);
+            liveCachedComponentNode.RenderModeName = renderModeName;
+            liveCachedComponentNode.Prerender = RenderFragmentSerializer.GetRenderModePrerender(renderMode);
         }
 
-        _entries.Add(CacheCaptureEntry.Hole(holeNode));
+        _entries.Add(CacheCaptureEntry.LiveCachedComponent(liveCachedComponentNode));
     }
 
     public void StopCapture()
@@ -126,7 +126,7 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
     }
 
     // Assembles the cache payload by walking the recorded entries in render order: markup segments become
-    // markup nodes and holes contribute the component node serialized at CreateHole time.
+    // markup nodes and live cached components contribute the component node serialized at CreateLiveCachedComponent time.
     public SerializedRenderFragment GetSerializedRenderFragment()
     {
         var nodes = new List<RenderTreeNode>(_entries.Count);
@@ -134,12 +134,12 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
 
         foreach (var entry in _entries)
         {
-            if (entry.HoleNode is { } holeNode)
+            if (entry.LiveCachedComponentNode is { } liveCachedComponentNode)
             {
-                // Holes are component nodes, not strings; charge a flat overhead so hole-heavy
-                // boundaries still count toward the cache size limit.
-                contentSize += HoleSizeEstimate;
-                nodes.Add(holeNode);
+                // Live components are component nodes, not strings; charge a flat overhead so
+                // live-cached-component-heavy boundaries still count toward the cache size limit.
+                contentSize += LiveCachedComponentSizeEstimate;
+                nodes.Add(liveCachedComponentNode);
             }
             else
             {
@@ -151,17 +151,17 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
         return new SerializedRenderFragment { Nodes = nodes, ContentSize = contentSize };
     }
 
-    // A hole is serialized from its parent's frames, which carry no nested RenderFragment captures, so a
+    // A live cached component is serialized from its parent's frames, which carry no nested RenderFragment captures, so a
     // RenderFragment parameter could not be replayed correctly. Surface an actionable error before the
     // generic serializer error fires.
-    private static void ThrowIfHoleHasRenderFragmentParameter(Type holeComponentType, RenderFragmentCapture capture)
+    private static void ThrowIfLiveCachedComponentHasRenderFragmentParameter(Type liveCachedComponentType, RenderFragmentCapture capture)
     {
         foreach (ref readonly var frame in capture.GetCapturedFrames().AsSpan())
         {
             if (frame.FrameType is RenderTreeFrameType.Attribute && IsRenderFragmentParameter(frame.AttributeValue))
             {
                 throw new InvalidOperationException(
-                    $"The [CacheBoundaryPolicy] hole component '{holeComponentType.FullName}' cannot be used inside a CacheBoundary because its RenderFragment parameter '{frame.AttributeName}' would be frozen to the first render's content (a hole's parameters are captured once and replayed). " +
+                    $"The [CacheBoundaryLiveComponent] live cached component '{liveCachedComponentType.FullName}' cannot be used inside a CacheBoundary because its RenderFragment parameter '{frame.AttributeName}' would be frozen to the first render's content (a live cached component's parameters are captured once and replayed). " +
                     "To fix this, remove the RenderFragment parameter or move the component outside the CacheBoundary.");
             }
         }
@@ -183,17 +183,17 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
 internal readonly struct CacheCaptureEntry
 {
     public string? Markup { get; }
-    public RenderTreeNode? HoleNode { get; }
+    public RenderTreeNode? LiveCachedComponentNode { get; }
 
-    private CacheCaptureEntry(string? markup, RenderTreeNode? holeNode)
+    private CacheCaptureEntry(string? markup, RenderTreeNode? liveCachedComponentNode)
     {
         Markup = markup;
-        HoleNode = holeNode;
+        LiveCachedComponentNode = liveCachedComponentNode;
     }
 
     public static CacheCaptureEntry MarkupEntry(string markup)
-        => new(markup, holeNode: null);
+        => new(markup, liveCachedComponentNode: null);
 
-    public static CacheCaptureEntry Hole(RenderTreeNode holeNode)
-        => new(markup: null, holeNode);
+    public static CacheCaptureEntry LiveCachedComponent(RenderTreeNode liveCachedComponentNode)
+        => new(markup: null, liveCachedComponentNode);
 }

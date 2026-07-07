@@ -16,7 +16,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     private static readonly JsonSerializerOptions _jsonOptions = ServerComponentSerializationSettings.JsonSerializationOptions;
     private static readonly ComponentParametersTypeCache _parametersTypeCache = new();
-    private static readonly ConcurrentDictionary<Type, CacheBoundaryPolicyAttribute?> _policyByComponentType = new();
+    private static readonly ConcurrentDictionary<Type, CacheBoundaryLiveComponentAttribute?> _liveComponentAttributeByType = new();
     private readonly ICacheBoundaryStore _store;
     private readonly ILogger<CacheBoundary> _logger;
 
@@ -24,7 +24,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
     {
         if (HotReloadManager.IsSupported)
         {
-            HotReloadManager.Default.OnDeltaApplied += _policyByComponentType.Clear;
+            HotReloadManager.Default.OnDeltaApplied += _liveComponentAttributeByType.Clear;
         }
     }
 
@@ -49,7 +49,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     public static bool IsCacheableComponent(Type componentType, CacheBoundaryVaryBy varyBy)
     {
-        var attr = _policyByComponentType.GetOrAdd(componentType, static type => type.GetCustomAttribute<CacheBoundaryPolicyAttribute>(inherit: true));
+        var attr = _liveComponentAttributeByType.GetOrAdd(componentType, static type => type.GetCustomAttribute<CacheBoundaryLiveComponentAttribute>(inherit: true));
 
         if (attr is null)
         {
@@ -61,7 +61,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
         if (attr.Disallow && !varyByMatches)
         {
             throw new InvalidOperationException(
-                $"Component '{componentType.FullName}' cannot be used inside a CacheBoundary because its output depends on per-request state ([CacheBoundaryPolicy(Disallow = true, VaryBy = {attr.VaryBy})]) that cannot be safely cached and replayed. " +
+                $"Component '{componentType.FullName}' cannot be used inside a CacheBoundary because its output depends on per-request state ([CacheBoundaryLiveComponent(Disallow = true, VaryBy = {attr.VaryBy})]) that cannot be safely cached and replayed. " +
                 (attr.VaryBy != CacheBoundaryVaryBy.None
                     ? $"To fix this, configure the boundary to vary by {attr.VaryBy}, or move the component outside the CacheBoundary."
                     : "To fix this, move the component outside the CacheBoundary."));

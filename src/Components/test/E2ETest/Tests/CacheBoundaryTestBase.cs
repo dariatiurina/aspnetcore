@@ -76,7 +76,7 @@ public abstract class CacheBoundaryTestBase : ServerTestBase<BasicTestAppServerS
     }
 
     [Fact]
-    public void CacheBoundaryCorrectlyCreatesHoles()
+    public void CacheBoundaryCorrectlyCreatesLiveCachedComponents()
     {
         Navigate(TestUrl("cache-component"));
         var testElement = Browser.FindElement(By.Id("test-3"));
@@ -141,49 +141,49 @@ public abstract class CacheBoundaryTestBase : ServerTestBase<BasicTestAppServerS
     }
 
     [Fact]
-    public void CacheBoundaryMultipleHolesOfSameType_PreserveCorrectOrder()
+    public void CacheBoundaryMultipleLiveCachedComponentsOfSameType_PreserveCorrectOrder()
     {
         Navigate(TestUrl("cache-component"));
-        Browser.Equal("first", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".hole-0")).Text);
-        Browser.Equal("second", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".hole-1")).Text);
+        Browser.Equal("first", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".live-cached-0")).Text);
+        Browser.Equal("second", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".live-cached-1")).Text);
         var cachedContent = Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".cached-content")).Text;
 
-        // Cache hit — holes with same (TypeName, Sequence) must not be swapped
+        // Cache hit — live cached components with same (TypeName, Sequence) must not be swapped
         Navigate(TestUrl("cache-component"));
         Browser.Equal(cachedContent, () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".cached-content")).Text);
-        Browser.Equal("first", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".hole-0")).Text);
-        Browser.Equal("second", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".hole-1")).Text);
+        Browser.Equal("first", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".live-cached-0")).Text);
+        Browser.Equal("second", () => Browser.FindElement(By.Id("test-5")).FindElement(By.CssSelector(".live-cached-1")).Text);
     }
 
     [Fact]
-    public void CacheBoundaryCachesHardcodedHole()
+    public void CacheBoundaryCachesHardcodedLiveCachedComponent()
     {
         Navigate(TestUrl("cache-component"));
         var panel = Browser.FindElement(By.Id("test-7"));
         var staticGuid = panel.FindElement(By.CssSelector(".panel-static")).Text;
-        var holeGuid = panel.FindElement(By.CssSelector(".hardcoded-hole")).Text;
-        Assert.NotEqual(staticGuid, holeGuid);
+        var liveCachedComponentGuid = panel.FindElement(By.CssSelector(".hardcoded-live-cached")).Text;
+        Assert.NotEqual(staticGuid, liveCachedComponentGuid);
 
-        // Warm reload: the wrapper's static output (emitted around the hardcoded hole) is served from
-        // the cache, while the hole itself re-renders fresh on every request.
+        // Warm reload: the wrapper's static output (emitted around the hardcoded live cached component) is served from
+        // the cache, while the live cached component itself re-renders fresh on every request.
         Navigate(TestUrl("cache-component"));
         Browser.Equal(staticGuid, () => Browser.FindElement(By.Id("test-7")).FindElement(By.CssSelector(".panel-static")).Text);
-        Browser.NotEqual(holeGuid, () => Browser.FindElement(By.Id("test-7")).FindElement(By.CssSelector(".hardcoded-hole")).Text);
+        Browser.NotEqual(liveCachedComponentGuid, () => Browser.FindElement(By.Id("test-7")).FindElement(By.CssSelector(".hardcoded-live-cached")).Text);
     }
 
     [Fact]
-    public void CacheBoundaryTreatsStreamingChildAsHole()
+    public void CacheBoundaryTreatsStreamingChildAsLiveCachedComponent()
     {
         Navigate(TestUrl("cache-component"));
         // The streaming component is rendered via a streaming batch, so wait for it to arrive.
-        var streamingGuid = Browser.Exists(By.CssSelector("#test-8 .streaming-hole")).Text;
+        var streamingGuid = Browser.Exists(By.CssSelector("#test-8 .streaming-live-cached")).Text;
         var staticGuid = Browser.FindElement(By.Id("test-8")).FindElement(By.CssSelector(".cached-static")).Text;
         Assert.NotEqual(staticGuid, streamingGuid);
 
         // Warm reload: the static content around the streaming component is served from the cache, while
-        // the streaming component is treated as a hole and re-renders fresh on every request.
+        // the streaming component is treated as a live cached component and re-renders fresh on every request.
         Navigate(TestUrl("cache-component"));
         Browser.Equal(staticGuid, () => Browser.FindElement(By.Id("test-8")).FindElement(By.CssSelector(".cached-static")).Text);
-        Browser.NotEqual(streamingGuid, () => Browser.FindElement(By.Id("test-8")).FindElement(By.CssSelector(".streaming-hole")).Text);
+        Browser.NotEqual(streamingGuid, () => Browser.FindElement(By.Id("test-8")).FindElement(By.CssSelector(".streaming-live-cached")).Text);
     }
 }
