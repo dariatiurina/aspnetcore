@@ -68,6 +68,10 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
             try
             {
                 var decodeStatus = Base64Url.DecodeFromChars(serializedDataFromCookie, decodeBuffer, out _, out var bytesWritten);
+                if (decodeStatus != OperationStatus.Done)
+                {
+                    throw new FormatException("The TempData cookie did not contain valid Base64Url-encoded data.");
+                }
                 var protectedBytes = decodeBuffer[..bytesWritten];
                 Dictionary<string, JsonElement>? dataFromCookie;
 
