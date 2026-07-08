@@ -55,8 +55,6 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
             return ReadOnlyDictionary<string, object?>.Empty;
         }
 
-        // Only the decode/unprotect/deserialize of untrusted cookie data is guarded: data errors
-        // fall back to empty, while unexpected errors surface instead of being silently swallowed.
         try
         {
             byte[]? rentedDecodeBuffer = null;

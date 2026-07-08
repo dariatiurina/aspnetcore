@@ -11,9 +11,6 @@ internal static class SessionResolver
     // features surface the same InvalidOperationException when the session is unavailable.
     internal const string SessionNotConfiguredMessage = "Session has not been configured for this application or request.";
 
-    // Fails fast the first time the session is touched and found unavailable, whether
-    // session middleware isn't configured or the feature exposes a null session.
-    // Callers that legitimately have no HttpContext (interactive rendering) must not call this.
     internal static ISession GetRequiredSession(HttpContext httpContext)
     {
         var session = httpContext.Session;

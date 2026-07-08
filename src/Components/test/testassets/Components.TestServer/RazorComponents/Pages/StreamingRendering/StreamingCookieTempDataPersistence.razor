@@ -1,4 +1,4 @@
-@page "/streaming-cookie-tempdata-persistence"
+﻿@page "/streaming-cookie-tempdata-persistence"
 @attribute [StreamRendering]
 
 <h1>Streaming Cookie TempData Persistence Test</h1>
@@ -23,10 +23,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // The await is critical: it causes the component to enter the streaming phase.
-        // Values set AFTER the await are written once the response has already started,
-        // which the cookie TempData provider cannot persist.
-        await Task.Delay(100);
+        await EnterStreamingPhaseAsync();
 
         SupplyParameterFromTempDataValue = "tempdata-set-during-streaming";
         if (TempData is not null)
@@ -35,4 +32,6 @@ else
         }
         _done = true;
     }
+
+    private static Task EnterStreamingPhaseAsync() => Task.Delay(100);
 }
