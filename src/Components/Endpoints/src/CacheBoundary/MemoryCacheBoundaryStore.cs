@@ -36,7 +36,7 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
             return existing;
         }
 
-        var tcs = new TaskCompletionSource<SerializedRenderFragment>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<SerializedRenderFragment>();
         var pending = _pending.GetOrAdd(key, tcs.Task);
         if (!ReferenceEquals(pending, tcs.Task))
         {
@@ -46,7 +46,12 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
         try
         {
             var payload = await factory(cancellationToken);
-            StoreEntry(key, payload, options);
+
+            if (payload.Nodes.Count > 0)
+            {
+                StoreEntry(key, payload, options);
+            }
+
             tcs.SetResult(payload);
             return payload;
         }
@@ -100,10 +105,8 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
         _cache.Clear();
     }
 
-    // The store keeps the fragment as an object instead of a serialized byte[]; the captured markup
-    // length was recorded when the fragment was built, so reuse it directly for the cache limit.
     private static long EstimateSize(SerializedRenderFragment payload)
-        => Math.Max(payload.ContentSize, 1);
+        => payload.ContentSize;
 
     public void Dispose()
     {
