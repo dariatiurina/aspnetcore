@@ -125,8 +125,8 @@ public sealed class RazorComponentsServiceOptions
 
     /// <summary>
     /// Gets or sets the <see cref="HybridCache"/> used by <see cref="CacheBoundary"/> for server-side
-    /// rendering. When left unset, it is populated automatically from the registered
-    /// <see cref="HybridCache"/> service if one is available; otherwise the in-memory store is used.
+    /// rendering. When left unset, the registered <see cref="HybridCache"/> service is used if one is
+    /// available; otherwise the in-memory store is used.
     /// </summary>
     public HybridCache? CacheBoundaryHybridCache { get; set; }
 
