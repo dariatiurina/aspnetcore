@@ -117,10 +117,12 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
     [Parameter] public EventCallback<TGridItem> OnRowClick { get; set; }
 
     /// <summary>
-    /// The parameter from which the page and sorting URL parameters are derived. The default value is an empty string, which results in query parameters named "page", "sort", and "order". If you provide a non-empty value, for example "products",
-    /// then the query parameters will be "products_page", "products_sort", and "products_order". This allows you to use multiple <see cref="QuickGrid{TGridItem}"/> components on the same page without their URL parameters conflicting with each other.
+    /// Optionally specifies the query parameter names used to persist the page, sort column, and sort direction in the URL.
+    /// When <see langword="null"/>, the query parameters are named "page", "sort", and "direction". Provide an instance with a
+    /// unique prefix, for example <c>new("products_")</c>, to use multiple <see cref="QuickGrid{TGridItem}"/> components on the
+    /// same page without their URL parameters conflicting with each other.
     /// </summary>
-    [Parameter] public string QueryParameterNamePrefix { get; set; } = "";
+    [Parameter] public QueryParameterNameOptions? QueryParameterNameOptions { get; set; }
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -175,9 +177,9 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
 
     private (string ColumnTitle, bool Ascending)? _cachedSortFromQuery;
 
-    private string SortQueryParameterNameBy => QueryParameterNamePrefix == "" ? "sort" : $"{QueryParameterNamePrefix}_sort";
-    private string SortQueryParameterNameOrder => QueryParameterNamePrefix == "" ? "order" : $"{QueryParameterNamePrefix}_order";
-    private string PageQueryParameterName => QueryParameterNamePrefix == "" ? "page" : $"{QueryParameterNamePrefix}_page";
+    private string SortQueryParameterNameBy => QueryParameterNameOptions?.Sort ?? "sort";
+    private string SortQueryParameterNameOrder => QueryParameterNameOptions?.Direction ?? "direction";
+    private string PageQueryParameterName => QueryParameterNameOptions?.Page ?? "page";
     private readonly QueryParameterValueSupplier _queryParameterValueSupplier;
 
     /// <summary>
