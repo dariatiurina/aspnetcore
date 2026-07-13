@@ -178,7 +178,7 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
     private (string ColumnTitle, bool Ascending)? _cachedSortFromQuery;
 
     private string SortQueryParameterNameBy => QueryParameterNameOptions?.Sort ?? "sort";
-    private string SortQueryParameterNameOrder => QueryParameterNameOptions?.Direction ?? "direction";
+    private string SortQueryParameterNameDirection => QueryParameterNameOptions?.Direction ?? "direction";
     private string PageQueryParameterName => QueryParameterNameOptions?.Page ?? "page";
     private readonly QueryParameterValueSupplier _queryParameterValueSupplier;
 
@@ -337,14 +337,14 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
         return NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             [SortQueryParameterNameBy] = column?.Title,
-            [SortQueryParameterNameOrder] = ascending ? "asc" : "desc",
+            [SortQueryParameterNameDirection] = ascending ? "asc" : "desc",
         });
     }
 
     private (string ColumnTitle, bool Ascending)? ReadSortFromQueryString()
     {
         var column = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameBy) as string;
-        var order = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameOrder) as string;
+        var order = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameDirection) as string;
         if (column is not null && order is not null)
         {
             return order switch
