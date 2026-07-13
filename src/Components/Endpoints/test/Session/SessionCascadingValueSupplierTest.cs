@@ -151,6 +151,7 @@ public class SessionCascadingValueSupplierTest
     {
         var sink = new TestSink();
         var supplier = new SessionCascadingValueSupplier(
+            new JsonTempDataAndSessionSerializer(),
             new TestLoggerFactory(sink, enabled: true).CreateLogger<SessionCascadingValueSupplier>());
         supplier.RegisterValueCallback("key", () => "value");
 

@@ -88,6 +88,7 @@ public class SessionSubscriptionTest
     {
         var sink = new TestSink();
         var supplier = new SessionCascadingValueSupplier(
+            new JsonTempDataAndSessionSerializer(),
             new TestLoggerFactory(sink, enabled: true).CreateLogger<SessionCascadingValueSupplier>());
         var subscription = new SessionCascadingValueSupplier.SessionSubscription(
             supplier, "key", typeof(string), () => _component.Value);
