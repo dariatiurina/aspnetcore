@@ -117,10 +117,10 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
     [Parameter] public EventCallback<TGridItem> OnRowClick { get; set; }
 
     /// <summary>
-    /// Optionally specifies the <see cref="QueryParameterNameOptions"/> used to persist the page, sort column,
-    /// and sort direction in the URL. When <see langword="null"/>, the query parameters are named "page", "sort", and "direction".
+    /// Specifies the <see cref="QueryParameterNameOptions"/> used to persist the page, sort column, and sort direction
+    /// in the URL. Defaults to an instance whose query parameters are named "page", "sort", and "direction".
     /// </summary>
-    [Parameter] public QueryParameterNameOptions? QueryParameterNameOptions { get; set; } = new();
+    [Parameter] public QueryParameterNameOptions QueryParameterNameOptions { get; set; } = new();
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -175,9 +175,9 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
 
     private (string ColumnTitle, bool Ascending)? _cachedSortFromQuery;
 
-    private string SortQueryParameterNameBy => QueryParameterNameOptions?.Sort ?? "sort";
-    private string SortQueryParameterNameDirection => QueryParameterNameOptions?.Direction ?? "direction";
-    private string PageQueryParameterName => QueryParameterNameOptions?.Page ?? "page";
+    private string SortQueryParameterNameBy => QueryParameterNameOptions.Sort;
+    private string SortQueryParameterNameDirection => QueryParameterNameOptions.Direction;
+    private string PageQueryParameterName => QueryParameterNameOptions.Page;
     private readonly QueryParameterValueSupplier _queryParameterValueSupplier;
 
     /// <summary>
