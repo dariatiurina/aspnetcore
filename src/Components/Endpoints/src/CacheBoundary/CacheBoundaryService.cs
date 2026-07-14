@@ -16,7 +16,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     private static readonly JsonSerializerOptions _jsonOptions = ServerComponentSerializationSettings.JsonSerializationOptions;
     private static readonly ComponentParametersTypeCache _parametersTypeCache = new();
-    private static readonly ConcurrentDictionary<Type, (CacheBehaviorAttribute? Behavior, CacheConditionAttribute? Condition)> _liveComponentAttributeByType = new();
+    private static readonly ConcurrentDictionary<Type, (CacheBehavior? Behavior, CacheVaryBy? Condition)> _liveComponentAttributeByType = new();
     private readonly ICacheBoundaryStore _store;
     private readonly ILogger<CacheView> _logger;
 
@@ -49,19 +49,19 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     public static bool IsCacheableComponent(Type componentType, CacheVaryBy varyBy)
     {
-        var (behaviorAttr, conditionAttr) = _liveComponentAttributeByType.GetOrAdd(componentType, static type =>
-            (type.GetCustomAttribute<CacheBehaviorAttribute>(inherit: true),
-             type.GetCustomAttribute<CacheConditionAttribute>(inherit: true)));
+        var (behavior, condition) = _liveComponentAttributeByType.GetOrAdd(componentType, static type =>
+            (type.GetCustomAttribute<CacheBehaviorAttribute>(inherit: true)?.Behavior,
+             type.GetCustomAttribute<CacheConditionAttribute>(inherit: true)?.VaryBy));
 
-        if (behaviorAttr is null && conditionAttr is null)
+        if (behavior is null && condition is null)
         {
             return true;
         }
 
-        var conditionVaryBy = conditionAttr?.VaryBy ?? CacheVaryBy.None;
+        var conditionVaryBy = condition ?? CacheVaryBy.None;
         var varyByMatches = conditionVaryBy != CacheVaryBy.None && (conditionVaryBy & varyBy) == conditionVaryBy;
 
-        if (behaviorAttr?.Behavior == CacheBehavior.Throw && !varyByMatches)
+        if (behavior == CacheBehavior.Throw && !varyByMatches)
         {
             throw new InvalidOperationException(
                 $"Component '{componentType.FullName}' cannot be used inside a CacheView because its output depends on per-request state ([CacheBehavior(CacheBehavior.Throw)]{(conditionVaryBy != CacheVaryBy.None ? $", [CacheCondition(CacheVaryBy.{conditionVaryBy})]" : "")}) that cannot be safely cached and replayed. " +
