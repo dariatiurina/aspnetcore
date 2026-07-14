@@ -3,9 +3,9 @@
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal sealed class CacheBoundaryRenderState
+internal sealed class CacheViewRenderState
 {
-    public CacheBoundaryRenderState(string key, CacheVaryBy varyBy)
+    public CacheViewRenderState(string key, CacheVaryBy varyBy)
     {
         Key = key;
         VaryBy = varyBy;
@@ -23,5 +23,5 @@ internal sealed class CacheBoundaryRenderState
 
     public Task<SerializedRenderFragment>? PendingStoreTask { get; set; }
 
-    public CacheBoundaryTextWriter? ActiveWriter { get; set; }
+    public CacheViewTextWriter? ActiveWriter { get; set; }
 }

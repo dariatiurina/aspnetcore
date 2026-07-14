@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal sealed class CacheBoundaryTextWriter : TextWriter
+internal sealed class CacheViewTextWriter : TextWriter
 {
     // Approximate per-live-cached-component footprint used only for cache size accounting; live cached components
     // are component nodes rather than strings, so they have no captured length to measure directly.
@@ -19,7 +19,7 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
     private bool _capturing;
     private bool _validateOnly;
 
-    public CacheBoundaryTextWriter(TextWriter inner, CacheVaryBy varyBy)
+    public CacheViewTextWriter(TextWriter inner, CacheVaryBy varyBy)
     {
         _innerWriter = inner;
         VaryBy = varyBy;

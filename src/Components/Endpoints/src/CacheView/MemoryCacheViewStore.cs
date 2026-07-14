@@ -8,13 +8,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
+internal sealed partial class MemoryCacheViewStore : ICacheViewStore
 {
     private readonly MemoryCache _cache;
-    private readonly ILogger<MemoryCacheBoundaryStore> _logger;
+    private readonly ILogger<MemoryCacheViewStore> _logger;
     private readonly ConcurrentDictionary<string, Task<SerializedRenderFragment>> _pending = new(StringComparer.Ordinal);
 
-    public MemoryCacheBoundaryStore(IOptions<RazorComponentsServiceOptions> options, ILogger<MemoryCacheBoundaryStore> logger)
+    public MemoryCacheViewStore(IOptions<RazorComponentsServiceOptions> options, ILogger<MemoryCacheViewStore> logger)
     {
         _cache = new MemoryCache(new MemoryCacheOptions
         {

@@ -97,16 +97,16 @@ public sealed class CacheView : IComponent, IDisposable
     [Parameter]
     public string? VaryBy { get; set; }
 
-    [Inject] internal CacheBoundaryService? CacheService { get; set; }
+    [Inject] internal CacheViewService? CacheService { get; set; }
     [CascadingParameter] internal HttpContext? HttpContext { get; set; }
     internal Func<string>? TreePositionKeyFactory { get; set; }
     internal string? TreePositionKey => TreePositionKeyFactory?.Invoke();
 
     internal bool IsInStreamingContext { get; set; }
 
-    // The per-render coordination state produced by CacheBoundaryService. Null when caching is inactive
+    // The per-render coordination state produced by CacheViewService. Null when caching is inactive
     // for this render; the renderer reads it to drive capture.
-    internal CacheBoundaryRenderState? RenderState { get; private set; }
+    internal CacheViewRenderState? RenderState { get; private set; }
 
     /// <inheritdoc/>
     void IComponent.Attach(RenderHandle renderHandle)
@@ -137,7 +137,7 @@ public sealed class CacheView : IComponent, IDisposable
     {
         if (RenderState is { } state)
         {
-            CacheService?.OnBoundaryDisposed(state);
+            CacheService?.OnCacheViewDisposed(state);
         }
     }
 }

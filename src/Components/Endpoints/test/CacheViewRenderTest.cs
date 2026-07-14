@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-public class CacheBoundaryRenderTest
+public class CacheViewRenderTest
 {
     [Fact]
     public async Task EmptyCachedFragment_FallsBackToChildContent()
@@ -17,7 +17,7 @@ public class CacheBoundaryRenderTest
         var httpContext = CreateHttpContext();
 
         var store = new TestCacheStore { ReturnForAnyKey = new SerializedRenderFragment() };
-        var service = new CacheBoundaryService(store, new TestLoggerFactory(testLogger));
+        var service = new CacheViewService(store, new TestLoggerFactory(testLogger));
 
         var component = new CacheView
         {
@@ -36,7 +36,7 @@ public class CacheBoundaryRenderTest
     {
         var httpContext = CreateHttpContext();
         var store = new TestCacheStore();
-        var service = new CacheBoundaryService(store, new TestLoggerFactory(new TestLogger()));
+        var service = new CacheViewService(store, new TestLoggerFactory(new TestLogger()));
 
         var first = new CacheView
         {
@@ -67,7 +67,7 @@ public class CacheBoundaryRenderTest
     {
         var httpContext = CreateHttpContext();
         var store = new TestCacheStore();
-        var service = new CacheBoundaryService(store, new TestLoggerFactory(new TestLogger()));
+        var service = new CacheViewService(store, new TestLoggerFactory(new TestLogger()));
 
         var boundary = new CacheView
         {
@@ -94,7 +94,7 @@ public class CacheBoundaryRenderTest
             Nodes = [new RenderTreeNode { Type = "markup", Content = "<p>from-cache</p>" }],
         };
         var store = new TestCacheStore { ReturnForAnyKey = precomputed };
-        var service = new CacheBoundaryService(store, new TestLoggerFactory(new TestLogger()));
+        var service = new CacheViewService(store, new TestLoggerFactory(new TestLogger()));
 
         var childContentInvocations = 0;
         var component = new CacheView
@@ -142,7 +142,7 @@ public class CacheBoundaryRenderTest
         Assert.Fail($"Expected to find text frame '{expectedText}' but it was not present.");
     }
 
-    private sealed class TestCacheStore : ICacheBoundaryStore
+    private sealed class TestCacheStore : ICacheViewStore
     {
         public Dictionary<string, SerializedRenderFragment> Data { get; } = new();
         public SerializedRenderFragment ReturnForAnyKey { get; set; }

@@ -5,14 +5,14 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal sealed class HybridCacheBoundaryStore : ICacheBoundaryStore
+internal sealed class HybridCacheViewStore : ICacheViewStore
 {
-    private const string CacheBoundaryTag = "Microsoft.AspNetCore.Components.Endpoints.CacheBoundary";
-    private static readonly string[] _tags = [CacheBoundaryTag];
+    private const string CacheViewTag = "Microsoft.AspNetCore.Components.Endpoints.CacheView";
+    private static readonly string[] _tags = [CacheViewTag];
 
     private readonly HybridCache _hybridCache;
 
-    public HybridCacheBoundaryStore(HybridCache hybridCache)
+    public HybridCacheViewStore(HybridCache hybridCache)
     {
         _hybridCache = hybridCache;
     }
@@ -42,7 +42,7 @@ internal sealed class HybridCacheBoundaryStore : ICacheBoundaryStore
     {
         try
         {
-            await _hybridCache.RemoveByTagAsync(CacheBoundaryTag);
+            await _hybridCache.RemoveByTagAsync(CacheViewTag);
         }
         catch
         {

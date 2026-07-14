@@ -18,7 +18,7 @@ internal sealed class EndpointComponentState : ComponentState
 {
     private static readonly ConcurrentDictionary<Type, StreamRenderingAttribute?> _streamRenderingAttributeByComponentType = new();
 
-    private static readonly string _cacheBoundaryTypeName = typeof(CacheView).FullName!;
+    private static readonly string _cacheViewTypeName = typeof(CacheView).FullName!;
 
     static EndpointComponentState()
     {
@@ -48,15 +48,15 @@ internal sealed class EndpointComponentState : ComponentState
             StreamRendering = parentEndpointComponentState?.StreamRendering ?? false;
         }
 
-        if (component is CacheView cacheBoundary && parentComponentState is not null)
+        if (component is CacheView cacheView && parentComponentState is not null)
         {
             // Output caching inside a streaming render context is not yet supported.
-            cacheBoundary.IsInStreamingContext = StreamRendering;
+            cacheView.IsInStreamingContext = StreamRendering;
 
             var ancestorTypeName = parentComponentState.Component?.GetType().FullName ?? "";
-            cacheBoundary.TreePositionKeyFactory = () =>
+            cacheView.TreePositionKeyFactory = () =>
             {
-                var sequence = FindSequenceInParent(parentComponentState, cacheBoundary);
+                var sequence = FindSequenceInParent(parentComponentState, cacheView);
                 var componentKey = GetComponentKey();
                 var keyString = ComponentKeyHelper.FormatSerializableKey(componentKey);
                 return ComputeTreePositionKey(ancestorTypeName, sequence, keyString);
@@ -91,7 +91,7 @@ internal sealed class EndpointComponentState : ComponentState
     {
         return string.Concat(
             ancestorTypeName, ".",
-            _cacheBoundaryTypeName, "#",
+            _cacheViewTypeName, "#",
             sequence.ToString(CultureInfo.InvariantCulture),
             keyString is not null ? "." : "",
             keyString);
