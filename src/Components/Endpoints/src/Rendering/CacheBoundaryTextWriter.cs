@@ -161,7 +161,7 @@ internal sealed class CacheBoundaryTextWriter : TextWriter
             if (frame.FrameType is RenderTreeFrameType.Attribute && IsRenderFragmentParameter(frame.AttributeValue))
             {
                 throw new InvalidOperationException(
-                    $"The [CacheBehavior] live cached component '{liveCachedComponentType.FullName}' cannot be used inside a CacheView because its RenderFragment parameter '{frame.AttributeName}' would be frozen to the first render's content (a live cached component's parameters are captured once and replayed). " +
+                    $"The live cached component '{liveCachedComponentType.FullName}' cannot be used inside a CacheView because its RenderFragment parameter '{frame.AttributeName}' would be frozen to the first render's content (a live cached component's parameters are captured once and replayed). " +
                     "To fix this, remove the RenderFragment parameter or move the component outside the CacheView.");
             }
         }

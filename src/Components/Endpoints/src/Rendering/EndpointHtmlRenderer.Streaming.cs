@@ -315,7 +315,7 @@ internal partial class EndpointHtmlRenderer
             if (!captureWriter.IsValidationOnly)
             {
                 // An interactive live cached component is wrapped in an SSRRenderModeBoundary that owns the inner
-                // component type and render mode; a plain [CacheBehavior] live cached component is the component
+                // component type and render mode; a plain live cached component is the component
                 // itself with no render mode.
                 var liveCachedComponentBoundary = componentState.Component as SSRRenderModeBoundary;
                 var liveCachedComponentType = liveCachedComponentBoundary?.ComponentType ?? componentState.Component.GetType();

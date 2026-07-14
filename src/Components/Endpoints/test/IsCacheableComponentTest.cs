@@ -51,6 +51,16 @@ public class IsCacheableComponentTest
             CacheBoundaryService.IsCacheableComponent(typeof(DerivedThrowingComponent), CacheVaryBy.None));
     }
 
+    [Fact]
+    public void Attribute_ThrowWithMultiFlagCondition_MessageFormatsFlagsAsValidCSharp()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            CacheBoundaryService.IsCacheableComponent(typeof(ThrowingMultiConditionComponent), CacheVaryBy.User));
+
+        Assert.Contains("[CacheCondition(CacheVaryBy.Query | CacheVaryBy.User)]", ex.Message);
+        Assert.DoesNotContain("CacheVaryBy.Query, User", ex.Message);
+    }
+
     [CacheBehavior(CacheBehavior.Rerender)]
     private class UnconditionalLiveCachedComponent : ComponentBase
     {
@@ -64,6 +74,13 @@ public class IsCacheableComponentTest
     }
 
     private sealed class DerivedThrowingComponent : ThrowingComponent { }
+
+    [CacheBehavior(CacheBehavior.Throw)]
+    [CacheCondition(CacheVaryBy.User | CacheVaryBy.Query)]
+    private class ThrowingMultiConditionComponent : ComponentBase
+    {
+        protected override void BuildRenderTree(RenderTreeBuilder builder) { }
+    }
 
     [CacheCondition(CacheVaryBy.User)]
     private class ConditionalLiveCachedComponent : ComponentBase

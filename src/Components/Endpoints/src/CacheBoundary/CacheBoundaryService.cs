@@ -64,7 +64,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
         if (behavior == CacheBehavior.Throw && !varyByMatches)
         {
             throw new InvalidOperationException(
-                $"Component '{componentType.FullName}' cannot be used inside a CacheView because its output depends on per-request state ([CacheBehavior(CacheBehavior.Throw)]{(conditionVaryBy != CacheVaryBy.None ? $", [CacheCondition(CacheVaryBy.{conditionVaryBy})]" : "")}) that cannot be safely cached and replayed. " +
+                $"Component '{componentType.FullName}' cannot be used inside a CacheView because its output depends on per-request state ([CacheBehavior(CacheBehavior.Throw)]{(conditionVaryBy != CacheVaryBy.None ? $", [CacheCondition({FormatVaryByFlags(conditionVaryBy)})]" : "")}) that cannot be safely cached and replayed. " +
                 (conditionVaryBy != CacheVaryBy.None
                     ? $"To fix this, configure the boundary to vary by {conditionVaryBy}, or move the component outside the CacheView."
                     : "To fix this, move the component outside the CacheView."));
@@ -72,6 +72,9 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
         return varyByMatches;
     }
+
+   private static string FormatVaryByFlags(CacheVaryBy varyBy)
+        => "CacheVaryBy." + varyBy.ToString().Replace(", ", " | CacheVaryBy.");
 
     public async Task<CacheBoundaryRenderState?> PrepareAsync(CacheView boundary, HttpContext httpContext)
     {

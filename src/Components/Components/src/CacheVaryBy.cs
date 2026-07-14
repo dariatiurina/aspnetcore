@@ -6,7 +6,7 @@ namespace Microsoft.AspNetCore.Components;
 /// <summary>
 /// Describes which vary-by dimensions are active on an enclosing CacheView.
 /// Used as flags in <see cref="CacheConditionAttribute"/> to express conditional
-/// cache exclusion, and internally to communicate the active dimensions to the renderer.
+/// cache inclusion, and internally to communicate the active dimensions to the renderer.
 /// </summary>
 [Flags]
 public enum CacheVaryBy
