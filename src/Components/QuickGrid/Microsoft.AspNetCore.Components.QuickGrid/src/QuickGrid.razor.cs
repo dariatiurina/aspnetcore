@@ -117,12 +117,10 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
     [Parameter] public EventCallback<TGridItem> OnRowClick { get; set; }
 
     /// <summary>
-    /// Optionally specifies the query parameter names used to persist the page, sort column, and sort direction in the URL.
-    /// When <see langword="null"/>, the query parameters are named "page", "sort", and "direction". Provide an instance with a
-    /// unique prefix, for example <c>new("products_")</c>, to use multiple <see cref="QuickGrid{TGridItem}"/> components on the
-    /// same page without their URL parameters conflicting with each other.
+    /// Optionally specifies the <see cref="QueryParameterNameOptions"/> used to persist the page, sort column,
+    /// and sort direction in the URL. When <see langword="null"/>, the query parameters are named "page", "sort", and "direction".
     /// </summary>
-    [Parameter] public QueryParameterNameOptions? QueryParameterNameOptions { get; set; }
+    [Parameter] public QueryParameterNameOptions? QueryParameterNameOptions { get; set; } = new();
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -344,10 +342,10 @@ public partial class QuickGrid<TGridItem> : IAsyncDisposable
     private (string ColumnTitle, bool Ascending)? ReadSortFromQueryString()
     {
         var column = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameBy) as string;
-        var order = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameDirection) as string;
-        if (column is not null && order is not null)
+        var direction = _queryParameterValueSupplier.GetQueryParameterValue(typeof(string), SortQueryParameterNameDirection) as string;
+        if (column is not null && direction is not null)
         {
-            return order switch
+            return direction switch
             {
                 var d when d.Equals("asc", StringComparison.OrdinalIgnoreCase) => (column, true),
                 var d when d.Equals("desc", StringComparison.OrdinalIgnoreCase) => (column, false),
