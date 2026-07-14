@@ -55,13 +55,13 @@ internal sealed class HybridCacheBoundaryStore : ICacheBoundaryStore
         if (options.ExpiresSliding.HasValue)
         {
             throw new NotSupportedException(
-                $"{nameof(CacheBoundary)}.{nameof(CacheBoundary.ExpiresSliding)} is not supported when the cache boundary store uses HybridCache. " +
-                $"Use {nameof(CacheBoundary.ExpiresAfter)} or {nameof(CacheBoundary.ExpiresOn)} for absolute expiration.");
+                $"{nameof(CacheView)}.{nameof(CacheView.ExpiresSliding)} is not supported when the cache view store uses HybridCache. " +
+                $"Use {nameof(CacheView.ExpiresAfter)} or {nameof(CacheView.ExpiresOn)} for absolute expiration.");
         }
 
         var absolute = options.ExpiresOn.HasValue
             ? options.ExpiresOn.Value - DateTimeOffset.UtcNow
-            : options.ExpiresAfter ?? RazorComponentsServiceOptions.DefaultCacheBoundaryExpiration;
+            : options.ExpiresAfter ?? RazorComponentsServiceOptions.DefaultCacheViewExpiration;
 
         if (absolute < TimeSpan.Zero)
         {

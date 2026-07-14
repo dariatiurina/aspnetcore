@@ -25,7 +25,7 @@ internal static class CacheBoundaryKeyResolver
         }
     }
 
-    internal static string ComputeKey(CacheBoundary cacheBoundary, HttpContext httpContext)
+    internal static string ComputeKey(CacheView cacheBoundary, HttpContext httpContext)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
@@ -71,13 +71,13 @@ internal static class CacheBoundaryKeyResolver
             AppendDelimitedCookieValues(hash, cacheBoundary.VaryByCookie, request);
         }
 
-        if (cacheBoundary.VaryByUser is true)
+        if (cacheBoundary.VaryByUser)
         {
             AppendString(hash, "||VaryByUser||");
             AppendUserIdentity(hash, httpContext.User);
         }
 
-        if (cacheBoundary.VaryByCulture is true)
+        if (cacheBoundary.VaryByCulture)
         {
             AppendString(hash, "||VaryByCulture||");
             AppendLengthPrefixedString(hash, CultureInfo.CurrentCulture.Name);

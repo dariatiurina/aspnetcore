@@ -5,7 +5,7 @@ namespace Microsoft.AspNetCore.Components.Endpoints;
 
 internal sealed class CacheBoundaryRenderState
 {
-    public CacheBoundaryRenderState(string key, CacheBoundaryVaryBy varyBy)
+    public CacheBoundaryRenderState(string key, CacheVaryBy varyBy)
     {
         Key = key;
         VaryBy = varyBy;
@@ -13,7 +13,7 @@ internal sealed class CacheBoundaryRenderState
 
     public string Key { get; }
 
-    public CacheBoundaryVaryBy VaryBy { get; }
+    public CacheVaryBy VaryBy { get; }
 
     public RenderFragment? Content { get; set; }
 

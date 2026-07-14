@@ -12,7 +12,7 @@ namespace Microsoft.AspNetCore.Components;
 /// server-side rendering (SSR). On cache hit, child components are not
 /// instantiated or rendered.
 /// </summary>
-public sealed class CacheBoundary : IComponent, IDisposable
+public sealed class CacheView : IComponent, IDisposable
 {
     private RenderHandle _renderHandle;
 
@@ -24,7 +24,7 @@ public sealed class CacheBoundary : IComponent, IDisposable
 
     /// <summary>
     /// Gets or sets an explicit cache key for disambiguation when multiple
-    /// <see cref="CacheBoundary"/> instances share the same component ancestor.
+    /// <see cref="CacheView"/> instances share the same component ancestor.
     /// </summary>
     [Parameter]
     public string? CacheKey { get; set; }
@@ -49,7 +49,7 @@ public sealed class CacheBoundary : IComponent, IDisposable
 
     /// <summary>
     /// Gets or sets how long after last access the cache entry should be evicted.
-    /// Not supported when the cache boundary store uses <c>HybridCache</c>.
+    /// Not supported when the cache view store uses <c>HybridCache</c>.
     /// </summary>
     [Parameter]
     public TimeSpan? ExpiresSliding { get; set; }
@@ -83,13 +83,13 @@ public sealed class CacheBoundary : IComponent, IDisposable
     /// Gets or sets whether to vary the cache by the authenticated user identity.
     /// </summary>
     [Parameter]
-    public bool? VaryByUser { get; set; }
+    public bool VaryByUser { get; set; }
 
     /// <summary>
     /// Gets or sets whether to vary the cache by the current culture.
     /// </summary>
     [Parameter]
-    public bool? VaryByCulture { get; set; }
+    public bool VaryByCulture { get; set; }
 
     /// <summary>
     /// Gets or sets a custom string value to vary the cache by.

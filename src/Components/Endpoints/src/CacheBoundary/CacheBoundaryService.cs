@@ -16,9 +16,9 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     private static readonly JsonSerializerOptions _jsonOptions = ServerComponentSerializationSettings.JsonSerializationOptions;
     private static readonly ComponentParametersTypeCache _parametersTypeCache = new();
-    private static readonly ConcurrentDictionary<Type, CacheBoundaryLiveComponentAttribute?> _liveComponentAttributeByType = new();
+    private static readonly ConcurrentDictionary<Type, (CacheBehaviorAttribute? Behavior, CacheConditionAttribute? Condition)> _liveComponentAttributeByType = new();
     private readonly ICacheBoundaryStore _store;
-    private readonly ILogger<CacheBoundary> _logger;
+    private readonly ILogger<CacheView> _logger;
 
     static CacheBoundaryService()
     {
@@ -31,7 +31,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
     public CacheBoundaryService(ICacheBoundaryStore store, ILoggerFactory loggerFactory)
     {
         _store = store;
-        _logger = loggerFactory.CreateLogger<CacheBoundary>();
+        _logger = loggerFactory.CreateLogger<CacheView>();
 
         if (HotReloadManager.IsSupported)
         {
@@ -47,30 +47,33 @@ internal sealed partial class CacheBoundaryService : IDisposable
         }
     }
 
-    public static bool IsCacheableComponent(Type componentType, CacheBoundaryVaryBy varyBy)
+    public static bool IsCacheableComponent(Type componentType, CacheVaryBy varyBy)
     {
-        var attr = _liveComponentAttributeByType.GetOrAdd(componentType, static type => type.GetCustomAttribute<CacheBoundaryLiveComponentAttribute>(inherit: true));
+        var (behaviorAttr, conditionAttr) = _liveComponentAttributeByType.GetOrAdd(componentType, static type =>
+            (type.GetCustomAttribute<CacheBehaviorAttribute>(inherit: true),
+             type.GetCustomAttribute<CacheConditionAttribute>(inherit: true)));
 
-        if (attr is null)
+        if (behaviorAttr is null && conditionAttr is null)
         {
             return true;
         }
 
-        var varyByMatches = attr.VaryBy != CacheBoundaryVaryBy.None && (attr.VaryBy & varyBy) == attr.VaryBy;
+        var conditionVaryBy = conditionAttr?.VaryBy ?? CacheVaryBy.None;
+        var varyByMatches = conditionVaryBy != CacheVaryBy.None && (conditionVaryBy & varyBy) == conditionVaryBy;
 
-        if (attr.Disallow && !varyByMatches)
+        if (behaviorAttr?.Behavior == CacheBehavior.Throw && !varyByMatches)
         {
             throw new InvalidOperationException(
-                $"Component '{componentType.FullName}' cannot be used inside a CacheBoundary because its output depends on per-request state ([CacheBoundaryLiveComponent(Disallow = true, VaryBy = {attr.VaryBy})]) that cannot be safely cached and replayed. " +
-                (attr.VaryBy != CacheBoundaryVaryBy.None
-                    ? $"To fix this, configure the boundary to vary by {attr.VaryBy}, or move the component outside the CacheBoundary."
-                    : "To fix this, move the component outside the CacheBoundary."));
+                $"Component '{componentType.FullName}' cannot be used inside a CacheView because its output depends on per-request state ([CacheBehavior(CacheBehavior.Throw)]{(conditionVaryBy != CacheVaryBy.None ? $", [CacheCondition(CacheVaryBy.{conditionVaryBy})]" : "")}) that cannot be safely cached and replayed. " +
+                (conditionVaryBy != CacheVaryBy.None
+                    ? $"To fix this, configure the boundary to vary by {conditionVaryBy}, or move the component outside the CacheView."
+                    : "To fix this, move the component outside the CacheView."));
         }
 
         return varyByMatches;
     }
 
-    public async Task<CacheBoundaryRenderState?> PrepareAsync(CacheBoundary boundary, HttpContext httpContext)
+    public async Task<CacheBoundaryRenderState?> PrepareAsync(CacheView boundary, HttpContext httpContext)
     {
         // Skip cache if method is not GET, caching is disabled, or the boundary is rendered inside a
         // streaming render context (not yet supported).
@@ -91,9 +94,9 @@ internal sealed partial class CacheBoundaryService : IDisposable
             if (!ReferenceEquals(existing.Owner, boundary))
             {
                 throw new InvalidOperationException(
-                    "Multiple CacheBoundary components resolved to the same cache key. " +
-                    "A CacheBoundary was rendered more than once at the same position in the component tree (for example, a reusable component used multiple times, or a CacheBoundary in a loop), so its output cannot be cached unambiguously. " +
-                    $"Set a unique {nameof(CacheBoundary.CacheKey)} on each CacheBoundary so every boundary on the page has a distinct cache key.");
+                    "Multiple CacheView components resolved to the same cache key. " +
+                    "A CacheView was rendered more than once at the same position in the component tree (for example, a reusable component used multiple times, or a CacheView in a loop), so its output cannot be cached unambiguously. " +
+                    $"Set a unique {nameof(CacheView.CacheKey)} on each CacheView so every boundary on the page has a distinct cache key.");
             }
 
             await ApplyDuplicateResolutionAsync(state, key, existing.Task);
@@ -112,14 +115,14 @@ internal sealed partial class CacheBoundaryService : IDisposable
         if (output is CacheBoundaryTextWriter { IsCapturing: true })
         {
             throw new InvalidOperationException(
-                "A CacheBoundary cannot be nested inside another CacheBoundary. The inner boundary's output " +
+                "A CacheView cannot be nested inside another CacheView. The inner boundary's output " +
                 "would be frozen into the outer cache entry and replayed on later requests, which is unsafe for " +
                 "per-request content such as antiforgery tokens, authentication-dependent output, or interactive " +
-                "component markers. Move the CacheBoundary so it is not nested inside another one.");
+                "component markers. Move the CacheView so it is not nested inside another one.");
         }
     }
 
-    public static bool TryBeginWrite(CacheBoundaryRenderState? state, CacheBoundary boundary, TextWriter output, out TextWriter wrappedOutput)
+    public static bool TryBeginWrite(CacheBoundaryRenderState? state, CacheView boundary, TextWriter output, out TextWriter wrappedOutput)
     {
         if (state is { CaptureCompletion: not null })
         {
@@ -202,44 +205,44 @@ internal sealed partial class CacheBoundaryService : IDisposable
         }
     }
 
-    public static CacheBoundaryVaryBy GetVaryBy(CacheBoundary boundary)
+    public static CacheVaryBy GetVaryBy(CacheView boundary)
     {
-        var result = CacheBoundaryVaryBy.None;
+        var result = CacheVaryBy.None;
 
         if (!string.IsNullOrEmpty(boundary.VaryByQuery))
         {
-            result |= CacheBoundaryVaryBy.Query;
+            result |= CacheVaryBy.Query;
         }
 
         if (!string.IsNullOrEmpty(boundary.VaryByRoute))
         {
-            result |= CacheBoundaryVaryBy.Route;
+            result |= CacheVaryBy.Route;
         }
 
         if (!string.IsNullOrEmpty(boundary.VaryByHeader))
         {
-            result |= CacheBoundaryVaryBy.Header;
+            result |= CacheVaryBy.Header;
         }
 
         if (!string.IsNullOrEmpty(boundary.VaryByCookie))
         {
-            result |= CacheBoundaryVaryBy.Cookie;
+            result |= CacheVaryBy.Cookie;
         }
 
-        if (boundary.VaryByUser is true)
+        if (boundary.VaryByUser)
         {
-            result |= CacheBoundaryVaryBy.User;
+            result |= CacheVaryBy.User;
         }
 
-        if (boundary.VaryByCulture is true)
+        if (boundary.VaryByCulture)
         {
-            result |= CacheBoundaryVaryBy.Culture;
+            result |= CacheVaryBy.Culture;
         }
 
         return result;
     }
 
-    // Reached only when the same CacheBoundary instance re-renders within the request: it reuses the
+    // Reached only when the same CacheView instance re-renders within the request: it reuses the
     // result of its original in-flight resolution rather than creating a second cache entry.
     private async Task ApplyDuplicateResolutionAsync(CacheBoundaryRenderState state, string key, Task<SerializedRenderFragment?> resolution)
     {
@@ -265,7 +268,7 @@ internal sealed partial class CacheBoundaryService : IDisposable
         }
     }
 
-    private async Task ResolveOrBeginCreateAsync(CacheBoundary boundary, CacheBoundaryRenderState state, TaskCompletionSource<SerializedRenderFragment?> resolution, CancellationToken cancellationToken)
+    private async Task ResolveOrBeginCreateAsync(CacheView boundary, CacheBoundaryRenderState state, TaskCompletionSource<SerializedRenderFragment?> resolution, CancellationToken cancellationToken)
     {
         var captureCompletion = new TaskCompletionSource<SerializedRenderFragment>(TaskCreationOptions.RunContinuationsAsynchronously);
         var factoryStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -351,11 +354,11 @@ internal sealed partial class CacheBoundaryService : IDisposable
         }
     }
 
-    private static Dictionary<string, (CacheBoundary Owner, Task<SerializedRenderFragment?> Task)> GetInFlightResolutions(HttpContext httpContext)
+    private static Dictionary<string, (CacheView Owner, Task<SerializedRenderFragment?> Task)> GetInFlightResolutions(HttpContext httpContext)
     {
-        if (httpContext.Items[_inFlightResolutionsItemKey] is not Dictionary<string, (CacheBoundary Owner, Task<SerializedRenderFragment?> Task)> resolutions)
+        if (httpContext.Items[_inFlightResolutionsItemKey] is not Dictionary<string, (CacheView Owner, Task<SerializedRenderFragment?> Task)> resolutions)
         {
-            resolutions = new Dictionary<string, (CacheBoundary, Task<SerializedRenderFragment?>)>(StringComparer.Ordinal);
+            resolutions = new Dictionary<string, (CacheView, Task<SerializedRenderFragment?>)>(StringComparer.Ordinal);
             httpContext.Items[_inFlightResolutionsItemKey] = resolutions;
         }
 
@@ -364,16 +367,16 @@ internal sealed partial class CacheBoundaryService : IDisposable
 
     private static partial class Log
     {
-        [LoggerMessage(1, LogLevel.Debug, "CacheBoundary with cache key '{Key}' re-rendered within the same request but no cached content was available; rendering its child content fresh.", EventName = "BoundaryReRenderingFresh")]
+        [LoggerMessage(1, LogLevel.Debug, "CacheView with cache key '{Key}' re-rendered within the same request but no cached content was available; rendering its child content fresh.", EventName = "BoundaryReRenderingFresh")]
         public static partial void BoundaryReRenderingFresh(ILogger logger, string key);
 
-        [LoggerMessage(4, LogLevel.Debug, "CacheBoundary with cache key '{Key}' re-rendered within the same request but its original resolution faulted; rendering its child content fresh.", EventName = "BoundaryReRenderFromFaultedResolution")]
+        [LoggerMessage(4, LogLevel.Debug, "CacheView with cache key '{Key}' re-rendered within the same request but its original resolution faulted; rendering its child content fresh.", EventName = "BoundaryReRenderFromFaultedResolution")]
         public static partial void BoundaryReRenderFromFaultedResolution(ILogger logger, string key, Exception exception);
 
-        [LoggerMessage(2, LogLevel.Warning, "Failed to restore CacheBoundary from cached data. Falling back to fresh render.", EventName = "RestoreFromCacheFailed")]
+        [LoggerMessage(2, LogLevel.Warning, "Failed to restore CacheView from cached data. Falling back to fresh render.", EventName = "RestoreFromCacheFailed")]
         public static partial void RestoreFromCacheFailed(ILogger logger, Exception exception);
 
-        [LoggerMessage(3, LogLevel.Warning, "Failed to persist CacheBoundary entry for key '{Key}'.", EventName = "PersistFailed")]
+        [LoggerMessage(3, LogLevel.Warning, "Failed to persist CacheView entry for key '{Key}'.", EventName = "PersistFailed")]
         public static partial void PersistFailed(ILogger logger, string key, Exception exception);
     }
 }

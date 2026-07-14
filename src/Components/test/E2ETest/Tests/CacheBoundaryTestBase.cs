@@ -13,7 +13,7 @@ namespace Microsoft.AspNetCore.Components.E2ETest.Tests;
 
 public abstract class CacheBoundaryTestBase : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsNoInteractivityStartup<App>>>
 {
-    // A unique id per test instance. Every CacheBoundary on the test pages varies by the "testId" query
+    // A unique id per test instance. Every CacheView on the test pages varies by the "testId" query
     // parameter, so each test's cache entries are isolated. This lets the suite run without relying on a
     // shared, globally-cleared cache and keeps tests independent when executed concurrently.
     private readonly string _testId = Guid.NewGuid().ToString("N");

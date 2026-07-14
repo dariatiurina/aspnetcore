@@ -433,19 +433,19 @@ public class CacheBoundaryKeyResolverTest
 
     private static RenderFragment DefaultChildContent => builder => builder.AddContent(0, "test");
 
-    private static CacheBoundary CreateComponent(
+    private static CacheView CreateComponent(
         RenderFragment childContent = null,
         string cacheKey = null,
         string varyByQuery = null,
         string varyByRoute = null,
         string varyByHeader = null,
         string varyByCookie = null,
-        bool? varyByUser = null,
-        bool? varyByCulture = null,
+        bool varyByUser = false,
+        bool varyByCulture = false,
         string varyBy = null,
         string treePositionKey = "DefaultParent.CacheBoundary")
     {
-        var component = new CacheBoundary
+        var component = new CacheView
         {
             ChildContent = childContent ?? DefaultChildContent,
             CacheKey = cacheKey,

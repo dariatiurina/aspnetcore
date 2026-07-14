@@ -18,7 +18,7 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
     {
         _cache = new MemoryCache(new MemoryCacheOptions
         {
-            SizeLimit = options.Value.CacheBoundarySizeLimit,
+            SizeLimit = options.Value.CacheViewSizeLimit,
         });
         _logger = logger;
     }
@@ -86,7 +86,7 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
             }
             else
             {
-                entryOptions.AbsoluteExpirationRelativeToNow = options.ExpiresAfter ?? RazorComponentsServiceOptions.DefaultCacheBoundaryExpiration;
+                entryOptions.AbsoluteExpirationRelativeToNow = options.ExpiresAfter ?? RazorComponentsServiceOptions.DefaultCacheViewExpiration;
             }
 
             _cache.Set(key, payload, entryOptions);
@@ -115,7 +115,7 @@ internal sealed partial class MemoryCacheBoundaryStore : ICacheBoundaryStore
 
     private static partial class Log
     {
-        [LoggerMessage(1, LogLevel.Warning, "Failed to store CacheBoundary entry for key '{Key}'.", EventName = "StoreEntryFailed")]
+        [LoggerMessage(1, LogLevel.Warning, "Failed to store CacheView entry for key '{Key}'.", EventName = "StoreEntryFailed")]
         public static partial void StoreEntryFailed(ILogger logger, string key, Exception exception);
     }
 }

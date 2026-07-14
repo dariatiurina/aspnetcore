@@ -78,7 +78,7 @@ public static class RazorComponentsServiceCollectionExtensions
         services.TryAddSingleton<ICacheBoundaryStore>(static sp =>
         {
             var options = sp.GetRequiredService<IOptions<RazorComponentsServiceOptions>>().Value;
-            var hybridCache = options.CacheBoundaryHybridCache ?? sp.GetService<HybridCache>();
+            var hybridCache = options.CacheViewHybridCache ?? sp.GetService<HybridCache>();
             return hybridCache is not null
                 ? new HybridCacheBoundaryStore(hybridCache)
                 : ActivatorUtilities.CreateInstance<MemoryCacheBoundaryStore>(sp);

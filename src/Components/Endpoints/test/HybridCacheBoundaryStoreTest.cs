@@ -19,7 +19,7 @@ public class HybridCacheBoundaryStoreTest
         {
             store.GetOrCreateAsync("key", Factory, options, default);
         });
-        Assert.Contains(nameof(CacheBoundary.ExpiresSliding), ex.Message);
+        Assert.Contains(nameof(CacheView.ExpiresSliding), ex.Message);
     }
 
     private static ValueTask<SerializedRenderFragment> Factory(CancellationToken cancellationToken)
