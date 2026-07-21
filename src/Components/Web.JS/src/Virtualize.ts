@@ -756,6 +756,16 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     intersectingEntries.forEach((entry): void => {
       const containerSize = (entry.rootBounds?.height ?? 0) / scaleFactor;
 
+      // A spacer callback — and the render/window-slide it triggers — is only invoked for
+      // spacerBefore, or for spacerAfter while it still has height. Skip everything else,
+      // notably spacerAfter at end-of-list (offsetHeight 0): suppressing native anchoring there
+      // would leave it disabled with no following render to re-enable it.
+      const invokesSpacerCallback = entry.target === spacerBefore
+        || (entry.target === spacerAfter && spacerAfter.offsetHeight > 0);
+      if (!invokesSpacerCallback) {
+        return;
+      }
+
       // So that RefreshObservedElements can skip item observation (avoids layout interference drift).
       scrollTriggeredRender = true;
       if (useNativeAnchoring) {
