@@ -5190,8 +5190,6 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
                     for (let i = 0; i < scrollCount; i++) {{
                         const before = Math.round(container.scrollTop);
                         container.scrollTop = before + direction * scrollDelta;
-                        // Setting scrollTop already queues a native 'scroll' event; no synthetic
-                        // dispatch is needed (a second event would run the handler twice per step).
                         await waitForRenderSettle();
 
                         const after = Math.round(container.scrollTop);

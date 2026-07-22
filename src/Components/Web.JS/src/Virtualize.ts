@@ -146,21 +146,15 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
   intersectionObserver.observe(spacerBefore);
   intersectionObserver.observe(spacerAfter);
 
-  // Convergence (sticky top/bottom) state. `observing` latches whether we are currently
-  // observing item resizes for convergence; `isConverging()` reports whether a direction is active.
   const convergence = {
     top: false,
     bottom: false,
-    observing: false,
     items: new Set<Element>(),
     isConverging(): boolean {
       return this.top || this.bottom;
     },
   };
 
-  // Centralized native (browser) scroll-anchoring control. Anchoring is suspended while any
-  // reason holds it and only restored once every reason has resumed, so independent concerns
-  // (convergence and scroll-triggered window slides) can't re-enable it behind each other's back.
   const nativeAnchoring = {
     suspendedFor: new Set<'convergence' | 'slide'>(),
     suspend(reason: 'convergence' | 'slide'): void {
@@ -170,8 +164,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       }
     },
     resume(reason: 'convergence' | 'slide'): void {
-      // Only act when this reason actually held a suspension, so a stray resume() can't clear an
-      // authored overflow-anchor value (matches the old `overflowAnchor === 'none'` guard).
       if (!this.suspendedFor.delete(reason)) {
         return;
       }
@@ -266,11 +258,8 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       scrollElement.scrollTop = convergence.bottom ? scrollElement.scrollHeight : 0;
       const spacer = convergence.bottom ? spacerAfter : spacerBefore;
       if (spacer.offsetHeight === 0) {
-        convergence.bottom = convergence.top = false;
         stopConvergenceObserving();
       }
-    } else if (convergence.observing) {
-      stopConvergenceObserving();
     }
 
     let spacerResized = false;
@@ -285,15 +274,12 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       }
     }
 
-    // Manual scroll compensation path (tables/Safari): adjust scrollTop for above-viewport resizes.
+    // Manual scroll compensation: adjust scrollTop for above-viewport resizes.
     if (!useNativeAnchoring) {
       compensateScrollForItemResizes(entries);
       return;
     }
 
-    // Native path: once the spacers settle after a scroll-triggered slide, resume anchoring so
-    // render-less above-viewport resizes (which have no JS hook) are compensated by the browser.
-    // resume() is a no-op while convergence still holds a suspension.
     if (spacerResized) {
       nativeAnchoring.resume('slide');
     }
@@ -310,7 +296,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
 
     // During convergence, keep the observed element set in sync with the DOM
     // and force scroll position to prevent bounce-back between renders.
-    if (convergence.observing) {
+    if (convergence.isConverging()) {
       if (convergence.bottom) {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       } else if (convergence.top) {
@@ -352,10 +338,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     const wasScrollTriggered = scrollTriggeredRender;
     scrollTriggeredRender = false;
 
-    // Resume native anchoring after the render commits, except for a synchronous scroll-slide
-    // (wasScrollTriggered && !isLoading) where the window moved with the user's scroll. For an
-    // async loading/placeholder render, resume now so the browser anchors across the async gap
-    // and the following data render. resume() is a no-op while convergence still suspends anchoring.
     if (!(wasScrollTriggered && !isLoading)) {
       nativeAnchoring.resume('slide');
     }
@@ -367,10 +349,9 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       // Start convergence only when there are more items to load (spacerAfter > 0).
       // When all items fit in DOM, the single scrollTop assignment above is sufficient.
       if (!convergence.bottom && !convergence.top && spacerAfter.offsetHeight > 0) {
-        convergence.bottom = true;
         suppressSpacerCallbacks = false;
         reobserveSpacers();
-        startConvergenceObserving();
+        startConvergenceObserving('bottom');
       }
     }
 
@@ -422,9 +403,8 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
 
     // Beginning mode at the very top: show new items by converging to top.
     if ((anchorMode & 1) && snapshot.scrollTop < 1) {
-      convergence.top = true;
       scrollElement.scrollTop = 0;
-      startConvergenceObserving();
+      startConvergenceObserving('top');
       return;
     }
 
@@ -463,9 +443,10 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     }
   }
 
-  function startConvergenceObserving(): void {
-    if (convergence.observing) return;
-    convergence.observing = true;
+  function startConvergenceObserving(direction: 'top' | 'bottom'): void {
+    const alreadyConverging = convergence.isConverging();
+    convergence[direction] = true;
+    if (alreadyConverging) return;
     nativeAnchoring.suspend('convergence');
     for (let el = spacerBefore.nextElementSibling; el && el !== spacerAfter; el = el.nextElementSibling) {
       resizeObserver.observe(el);
@@ -474,8 +455,9 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
   }
 
   function stopConvergenceObserving(): void {
-    if (!convergence.observing) return;
-    convergence.observing = false;
+    if (!convergence.isConverging()) return;
+    convergence.top = false;
+    convergence.bottom = false;
     for (const el of convergence.items) {
       resizeObserver.unobserve(el);
     }
@@ -498,8 +480,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       pendingJumpToEnd = true;
       pendingJumpToStart = false;
       if (!convergence.bottom && spacerAfter.offsetHeight > 0) {
-        convergence.bottom = true;
-        startConvergenceObserving();
+        startConvergenceObserving('bottom');
       }
     } else if (ke.key === 'Home') {
       suppressSpacerCallbacks = false;
@@ -507,8 +488,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       pendingJumpToStart = true;
       pendingJumpToEnd = false;
       if (!convergence.top && spacerBefore.offsetHeight > 0) {
-        convergence.top = true;
-        startConvergenceObserving();
+        startConvergenceObserving('top');
       }
     }
   }
@@ -576,11 +556,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       ignoreAnchorScroll = true;
       suppressSpacerCallbacks = true;
       observersByDotNetObjectId[id].anchorSnapshot = null;
-      if (convergence.isConverging()) {
-        convergence.top = false;
-        convergence.bottom = false;
-        stopConvergenceObserving();
-      }
+      stopConvergenceObserving();
       return;
     }
     pendingAlignLocalIndex = null;
@@ -589,11 +565,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
       suppressSpacerCallbacks = true;
       // Programmatic scroll establishes a new explicit position — invalidate any pending anchor snapshot and cancel in-progress convergence.
       observersByDotNetObjectId[id].anchorSnapshot = null;
-      if (convergence.isConverging()) {
-        convergence.top = false;
-        convergence.bottom = false;
-        stopConvergenceObserving();
-      }
+      stopConvergenceObserving();
       pendingJumpToStart = false;
       pendingJumpToEnd = false;
       scrollElement.scrollTo({ top: scrollElement.scrollTop + delta, behavior: 'instant' });
@@ -606,7 +578,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     refreshObservedElements,
     scrollElement,
     startConvergenceObserving,
-    setConvergingToBottom: () => { convergence.bottom = true; },
     isFollowingBottom: () => bottomTracking.following,
     setAnchorMode: (mode: number) => { anchorMode = mode; bottomTracking.following = (mode & 2) !== 0; bottomTracking.reached = isViewportAtBottom(); },
     restoreAnchor: restoreAnchorForShift,
@@ -651,7 +622,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
   function onSpacerAfterVisible(): void {
     if (spacerAfter.offsetHeight === 0) {
       if (convergence.bottom) {
-        convergence.bottom = false;
         stopConvergenceObserving();
       }
       return;
@@ -661,8 +631,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     // pendingJumpToEnd is user-initiated (End key) — always honor it.
     // Data-driven convergence only fires when End anchoring is enabled.
     if (pendingJumpToEnd) {
-      convergence.bottom = true;
-      startConvergenceObserving();
+      startConvergenceObserving('bottom');
       scrollElement.scrollTop = scrollElement.scrollHeight;
       pendingJumpToEnd = false;
       return;
@@ -673,14 +642,12 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     const atBottom = scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 1;
     if (!atBottom) return;
 
-    convergence.bottom = true;
-    startConvergenceObserving();
+    startConvergenceObserving('bottom');
   }
 
   function onSpacerBeforeVisible(): void {
     if (spacerBefore.offsetHeight === 0) {
       if (convergence.top) {
-        convergence.top = false;
         stopConvergenceObserving();
       }
       return;
@@ -690,8 +657,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     // pendingJumpToStart is user-initiated (Home key) — always honor it.
     // Data-driven convergence only fires when Beginning anchoring is enabled.
     if (pendingJumpToStart) {
-      convergence.top = true;
-      startConvergenceObserving();
+      startConvergenceObserving('top');
       scrollElement.scrollTop = 0;
       pendingJumpToStart = false;
       return;
@@ -702,8 +668,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     const atTop = scrollElement.scrollTop < 1;
     if (!atTop) return;
 
-    convergence.top = true;
-    startConvergenceObserving();
+    startConvergenceObserving('top');
   }
 
   // Saves the first visible item's child index and viewport-relative position.
@@ -786,10 +751,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     intersectingEntries.forEach((entry): void => {
       const containerSize = (entry.rootBounds?.height ?? 0) / scaleFactor;
 
-      // A spacer callback — and the render/window-slide it triggers — is only invoked for
-      // spacerBefore, or for spacerAfter while it still has height. Skip everything else,
-      // notably spacerAfter at end-of-list (offsetHeight 0): suppressing native anchoring there
-      // would leave it disabled with no following render to re-enable it.
       const invokesSpacerCallback = entry.target === spacerBefore
         || (entry.target === spacerAfter && spacerAfter.offsetHeight > 0);
       if (!invokesSpacerCallback) {
@@ -798,8 +759,6 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
 
       // So that RefreshObservedElements can skip item observation (avoids layout interference drift).
       scrollTriggeredRender = true;
-      // Suspend native anchoring for this intentional window-slide so the browser doesn't fight it; 
-      // refreshObservedElements resumes it once the slide has committed.
       nativeAnchoring.suspend('slide');
 
       if (entry.target === spacerBefore) {
@@ -829,9 +788,8 @@ function scrollToBottom(dotNetHelper: DotNet.DotNetObject): void {
   const { observersByDotNetObjectId, id } = getObserversMapEntry(dotNetHelper);
   const entry = observersByDotNetObjectId[id];
   if (entry && entry.isFollowingBottom?.()) {
-    entry.setConvergingToBottom?.();
     entry.scrollElement.scrollTop = entry.scrollElement.scrollHeight;
-    entry.startConvergenceObserving?.();
+    entry.startConvergenceObserving?.('bottom');
   }
 }
 
