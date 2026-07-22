@@ -338,7 +338,7 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     const wasScrollTriggered = scrollTriggeredRender;
     scrollTriggeredRender = false;
 
-    if (!(wasScrollTriggered && !isLoading)) {
+    if (!wasScrollTriggered || isLoading) {
       nativeAnchoring.resume('slide');
     }
 
