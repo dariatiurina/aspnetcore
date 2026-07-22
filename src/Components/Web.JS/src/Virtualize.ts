@@ -751,24 +751,20 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     intersectingEntries.forEach((entry): void => {
       const containerSize = (entry.rootBounds?.height ?? 0) / scaleFactor;
 
-      const invokesSpacerCallback = 
-        (entry.target === spacerBefore && spacerBefore.offsetHeight > 0)
-        || (entry.target === spacerAfter && spacerAfter.offsetHeight > 0);
-      if (!invokesSpacerCallback) {
-        return;
-      }
-
-      // So that RefreshObservedElements can skip item observation (avoids layout interference drift).
-      scrollTriggeredRender = true;
-      nativeAnchoring.suspend('slide');
-
       if (entry.target === spacerBefore) {
+        // So that RefreshObservedElements can skip item observation (avoids layout interference drift).
+        scrollTriggeredRender = true;
+        if (spacerBefore.offsetHeight > 0) {
+          nativeAnchoring.suspend('slide');
+        }
         const spacerSize = (entry.intersectionRect.top - entry.boundingClientRect.top) / scaleFactor;
         dotNetHelper.invokeMethodAsync('OnSpacerBeforeVisible', spacerSize, spacerSeparation, containerSize);
       } else if (entry.target === spacerAfter && spacerAfter.offsetHeight > 0) {
         // When we first start up, both the "before" and "after" spacers will be visible, but it's only relevant to raise a
         // single event to load the initial data. To avoid raising two events, skip the one for the "after" spacer if we know
         // it's meaningless to talk about any overlap into it.
+        scrollTriggeredRender = true;
+        nativeAnchoring.suspend('slide');
         const spacerSize = (entry.boundingClientRect.bottom - entry.intersectionRect.bottom) / scaleFactor;
         dotNetHelper.invokeMethodAsync('OnSpacerAfterVisible', spacerSize, spacerSeparation, containerSize);
       }
