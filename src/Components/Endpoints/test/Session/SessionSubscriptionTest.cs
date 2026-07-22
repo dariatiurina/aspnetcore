@@ -22,11 +22,11 @@ public class SessionSubscriptionTest
 
     public SessionSubscriptionTest()
     {
-        _supplier = new SessionCascadingValueSupplier(new JsonTempDataAndSessionSerializer(), NullLogger<SessionCascadingValueSupplier>.Instance);
+        _supplier = new SessionCascadingValueSupplier(new JsonStoredDataSerializer(), NullLogger<SessionCascadingValueSupplier>.Instance);
         _component = new TestComponent();
     }
 
-    private static readonly JsonTempDataAndSessionSerializer _serializer = new();
+    private static readonly JsonStoredDataSerializer _serializer = new();
 
     private static void SetSessionValue(HttpContext httpContext, string key, object value, Type type)
     {
@@ -88,7 +88,7 @@ public class SessionSubscriptionTest
     {
         var sink = new TestSink();
         var supplier = new SessionCascadingValueSupplier(
-            new JsonTempDataAndSessionSerializer(),
+            new JsonStoredDataSerializer(),
             new TestLoggerFactory(sink, enabled: true).CreateLogger<SessionCascadingValueSupplier>());
         var subscription = new SessionCascadingValueSupplier.SessionSubscription(
             supplier, "key", typeof(string), () => _component.Value);

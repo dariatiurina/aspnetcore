@@ -7,9 +7,9 @@ using System.Text.Json;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-public class JsonTempDataAndSessionSerializerTest
+public class JsonStoredDataSerializerTest
 {
-    private static JsonTempDataAndSessionSerializer CreateSerializer() => new JsonTempDataAndSessionSerializer();
+    private static JsonStoredDataSerializer CreateSerializer() => new JsonStoredDataSerializer();
 
     public static TheoryData<Type> InvalidTypes
     {

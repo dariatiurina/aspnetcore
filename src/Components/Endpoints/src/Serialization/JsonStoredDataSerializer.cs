@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal sealed class JsonTempDataAndSessionSerializer : ITempDataAndSessionSerializer
+internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 

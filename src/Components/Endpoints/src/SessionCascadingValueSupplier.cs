@@ -16,10 +16,10 @@ internal partial class SessionCascadingValueSupplier
     private static readonly ConcurrentDictionary<(Type, string), PropertyGetter> _propertyGetterCache = new();
     private HttpContext? _httpContext;
     private readonly Dictionary<string, Func<object?>> _valueCallbacks = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ITempDataAndSessionSerializer _serializer;
+    private readonly IStoredDataSerializer _serializer;
     private readonly ILogger<SessionCascadingValueSupplier> _logger;
 
-    public SessionCascadingValueSupplier(ITempDataAndSessionSerializer serializer, ILogger<SessionCascadingValueSupplier> logger)
+    public SessionCascadingValueSupplier(IStoredDataSerializer serializer, ILogger<SessionCascadingValueSupplier> logger)
     {
         _serializer = serializer;
         _logger = logger;

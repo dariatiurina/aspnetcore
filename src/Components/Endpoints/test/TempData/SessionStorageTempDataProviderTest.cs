@@ -19,7 +19,7 @@ public class SessionStorageTempDataProviderTest
     public SessionStorageTempDataProviderTest()
     {
         _sessionStateTempDataProvider = new SessionStorageTempDataProvider(
-            new JsonTempDataAndSessionSerializer(),
+            new JsonStoredDataSerializer(),
             NullLogger<SessionStorageTempDataProvider>.Instance);
     }
 

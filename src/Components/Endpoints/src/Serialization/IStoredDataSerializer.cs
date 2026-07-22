@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
-internal interface ITempDataAndSessionSerializer
+internal interface IStoredDataSerializer
 {
     IDictionary<string, (object? Value, Type? Type)> DeserializeData(IDictionary<string, JsonElement> data);
 

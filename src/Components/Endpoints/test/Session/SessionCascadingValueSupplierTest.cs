@@ -14,11 +14,11 @@ namespace Microsoft.AspNetCore.Components.Endpoints;
 public class SessionCascadingValueSupplierTest
 {
     private readonly SessionCascadingValueSupplier _supplier;
-    private static readonly JsonTempDataAndSessionSerializer _serializer = new();
+    private static readonly JsonStoredDataSerializer _serializer = new();
 
     public SessionCascadingValueSupplierTest()
     {
-        _supplier = new SessionCascadingValueSupplier(new JsonTempDataAndSessionSerializer(), NullLogger<SessionCascadingValueSupplier>.Instance);
+        _supplier = new SessionCascadingValueSupplier(new JsonStoredDataSerializer(), NullLogger<SessionCascadingValueSupplier>.Instance);
     }
 
     private static void AssertSessionValue(ISession session, string key, object? expected)
@@ -151,7 +151,7 @@ public class SessionCascadingValueSupplierTest
     {
         var sink = new TestSink();
         var supplier = new SessionCascadingValueSupplier(
-            new JsonTempDataAndSessionSerializer(),
+            new JsonStoredDataSerializer(),
             new TestLoggerFactory(sink, enabled: true).CreateLogger<SessionCascadingValueSupplier>());
         supplier.RegisterValueCallback("key", () => "value");
 
