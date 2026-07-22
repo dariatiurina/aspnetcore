@@ -751,7 +751,8 @@ function init(dotNetHelper: DotNet.DotNetObject, spacerBefore: HTMLElement, spac
     intersectingEntries.forEach((entry): void => {
       const containerSize = (entry.rootBounds?.height ?? 0) / scaleFactor;
 
-      const invokesSpacerCallback = entry.target === spacerBefore
+      const invokesSpacerCallback = 
+        (entry.target === spacerBefore && spacerBefore.offsetHeight > 0)
         || (entry.target === spacerAfter && spacerAfter.offsetHeight > 0);
       if (!invokesSpacerCallback) {
         return;
