@@ -181,7 +181,7 @@ internal sealed class JsonTempDataAndSessionSerializer : ITempDataAndSessionSeri
         var valueType = type ?? value.GetType();
         if (!TryGetStorageType(valueType, out var storageType))
         {
-            throw new UnsupportedSerializationTypeException(valueType);
+            throw new InvalidOperationException($"Cannot serialize type '{valueType}'.");
         }
 
         var writeValue = NormalizeEnums(value, valueType, storageType);

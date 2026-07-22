@@ -441,7 +441,7 @@ public class JsonTempDataAndSessionSerializerTest
     {
         var serializer = CreateSerializer();
 
-        Assert.Throws<UnsupportedSerializationTypeException>(() => serializer.SerializeValue(new TestItem(), typeof(TestItem)));
+        Assert.Throws<InvalidOperationException>(() => serializer.SerializeValue(new TestItem(), typeof(TestItem)));
     }
 
     [Fact]

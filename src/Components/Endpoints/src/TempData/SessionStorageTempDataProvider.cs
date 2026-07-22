@@ -63,15 +63,7 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
             return;
         }
 
-        byte[] bytes;
-        try
-        {
-            bytes = _tempDataSerializer.SerializeData(values);
-        }
-        catch (UnsupportedSerializationTypeException ex)
-        {
-            throw new InvalidOperationException($"TempData cannot store values of type '{ex.UnsupportedType}'.", ex);
-        }
+        var bytes = _tempDataSerializer.SerializeData(values);
 
         session.Set(TempDataSessionStateKey, bytes);
         Log.TempDataSessionSaveSuccess(_logger);

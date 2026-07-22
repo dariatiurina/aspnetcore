@@ -119,15 +119,7 @@ internal partial class SessionCascadingValueSupplier
             }
 
             var valueType = value.GetType();
-            byte[] bytes;
-            try
-            {
-                bytes = _serializer.SerializeValue(value, valueType);
-            }
-            catch (UnsupportedSerializationTypeException ex)
-            {
-                throw new InvalidOperationException($"Session cannot store values of type '{ex.UnsupportedType}'.", ex);
-            }
+            var bytes = _serializer.SerializeValue(value, valueType);
 
             session.Set(sessionKey, bytes);
         }

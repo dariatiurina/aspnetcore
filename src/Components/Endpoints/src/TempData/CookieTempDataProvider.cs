@@ -126,15 +126,7 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
             return;
         }
 
-        byte[] bytes;
-        try
-        {
-            bytes = _tempDataSerializer.SerializeData(values);
-        }
-        catch (UnsupportedSerializationTypeException ex)
-        {
-            throw new InvalidOperationException($"TempData cannot store values of type '{ex.UnsupportedType}'.", ex);
-        }
+        var bytes = _tempDataSerializer.SerializeData(values);
 
         var protectedBytes = _dataProtector.Protect(bytes);
         var encodedValue = Base64Url.EncodeToString(protectedBytes);
