@@ -7,7 +7,7 @@ public class TempDataTest
 {
     internal TempData CreateTempData()
     {
-        return new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        return new TempData(() => new Dictionary<string, TempDataValue>());
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class TempDataTest
     public void Load_PopulatesDataFromDictionary()
     {
         var tempData = CreateTempData();
-        var dataToLoad = new Dictionary<string, (object Value, Type Type)>
+        var dataToLoad = new Dictionary<string, TempDataValue>
         {
             ["Key1"] = ("Value1", typeof(string)),
             ["Key2"] = ("Value2", typeof(string))
@@ -180,7 +180,7 @@ public class TempDataTest
     {
         var tempData = CreateTempData();
         tempData["ExistingKey"] = "ExistingValue";
-        var dataToLoad = new Dictionary<string, (object Value, Type Type)>
+        var dataToLoad = new Dictionary<string, TempDataValue>
         {
             ["NewKey"] = ("NewValue", typeof(string))
         };
@@ -220,7 +220,7 @@ public class TempDataTest
         var tempData = new TempData(() =>
         {
             loadCalled = true;
-            return new Dictionary<string, (object Value, Type Type)> { ["Key"] = ("Value", typeof(string)) };
+            return new Dictionary<string, TempDataValue> { ["Key"] = ("Value", typeof(string)) };
         });
         var saved = tempData.Save();
 
@@ -238,7 +238,7 @@ public class TempDataTest
         {
             loadCalled = true;
             numberOfLoads++;
-            return new Dictionary<string, (object Value, Type Type)> { ["Key"] = ("Value", typeof(string)) };
+            return new Dictionary<string, TempDataValue> { ["Key"] = ("Value", typeof(string)) };
         });
 
         var value = tempData["Key"];
@@ -254,7 +254,7 @@ public class TempDataTest
     [Fact]
     public void Get_ConsumesValue_WhenFirstAccessTriggersLazyLoad()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>
         {
             ["Message"] = ("hello", typeof(string))
         });
@@ -269,7 +269,7 @@ public class TempDataTest
     [Fact]
     public void Indexer_ConsumesValue_WhenFirstAccessTriggersLazyLoad()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>
         {
             ["Message"] = ("hello", typeof(string))
         });
@@ -284,7 +284,7 @@ public class TempDataTest
     [Fact]
     public void Remove_RemovesValue_WhenFirstAccessTriggersLazyLoad()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>
         {
             ["Message"] = ("hello", typeof(string))
         });
@@ -299,7 +299,7 @@ public class TempDataTest
     [Fact]
     public void Keep_RetainsAllKeys_WhenFirstAccessTriggersLazyLoad()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>
         {
             ["Key1"] = ("Value1", typeof(string)),
             ["Key2"] = ("Value2", typeof(string))
@@ -316,7 +316,7 @@ public class TempDataTest
     [Fact]
     public void Enumerator_IteratesAllKeys_WhenFirstAccessTriggersLazyLoad()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>
         {
             ["Key1"] = ("Value1", typeof(string)),
             ["Key2"] = ("Value2", typeof(string))

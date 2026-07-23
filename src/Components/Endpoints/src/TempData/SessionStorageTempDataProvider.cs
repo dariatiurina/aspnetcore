@@ -21,7 +21,7 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
         _logger = logger;
     }
 
-    public IDictionary<string, (object? Value, Type? Type)> LoadTempData(HttpContext context)
+    public IDictionary<string, TempDataValue> LoadTempData(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -34,7 +34,7 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
                 var dataFromSession = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(value);
                 if (dataFromSession is null)
                 {
-                    return new Dictionary<string, (object? Value, Type? Type)>();
+                    return new Dictionary<string, TempDataValue>();
                 }
 
                 var convertedData = _tempDataSerializer.DeserializeData(dataFromSession);
@@ -43,16 +43,16 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
             }
 
             Log.TempDataSessionNotFound(_logger);
-            return new Dictionary<string, (object? Value, Type? Type)>();
+            return new Dictionary<string, TempDataValue>();
         }
         catch (Exception ex)
         {
             Log.TempDataSessionLoadFailure(_logger, ex);
-            return new Dictionary<string, (object? Value, Type? Type)>();
+            return new Dictionary<string, TempDataValue>();
         }
     }
 
-    public void SaveTempData(HttpContext context, IDictionary<string, (object? Value, Type? Type)> values)
+    public void SaveTempData(HttpContext context, IDictionary<string, TempDataValue> values)
     {
         ArgumentNullException.ThrowIfNull(context);
 

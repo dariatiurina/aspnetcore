@@ -10,17 +10,17 @@ namespace Microsoft.AspNetCore.Components;
 internal sealed class TempData : ITempData
 {
     public bool WasLoaded => _loaded && _loadFunc is null;
-    private readonly Dictionary<string, (object? Value, Type? Type)> _data = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TempDataValue> _data = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _retainedKeys = new(StringComparer.OrdinalIgnoreCase);
-    private Func<IDictionary<string, (object? Value, Type? Type)>>? _loadFunc;
+    private Func<IDictionary<string, TempDataValue>>? _loadFunc;
     private bool _loaded;
 
-    internal TempData(Func<IDictionary<string, (object? Value, Type? Type)>> loadFunc)
+    internal TempData(Func<IDictionary<string, TempDataValue>> loadFunc)
     {
         _loadFunc = loadFunc;
     }
 
-    private Dictionary<string, (object? Value, Type? Type)> Data
+    private Dictionary<string, TempDataValue> Data
     {
         get
         {
@@ -43,7 +43,7 @@ internal sealed class TempData : ITempData
         }
         set
         {
-            Data[key] = (value, value?.GetType());
+            Data[key] = new TempDataValue(value, value?.GetType());
             _retainedKeys.Add(key);
         }
     }
@@ -85,9 +85,9 @@ internal sealed class TempData : ITempData
         return removed;
     }
 
-    public IDictionary<string, (object? Value, Type? Type)> Save()
+    public IDictionary<string, TempDataValue> Save()
     {
-        var dataToSave = new Dictionary<string, (object? Value, Type? Type)>();
+        var dataToSave = new Dictionary<string, TempDataValue>();
         foreach (var key in _retainedKeys)
         {
             dataToSave[key] = _data[key];
@@ -95,7 +95,7 @@ internal sealed class TempData : ITempData
         return dataToSave;
     }
 
-    public void Load(IDictionary<string, (object? Value, Type? Type)> data)
+    public void Load(IDictionary<string, TempDataValue> data)
     {
         _data.Clear();
         _retainedKeys.Clear();
@@ -118,7 +118,7 @@ internal sealed class TempData : ITempData
     ICollection<object?> IDictionary<string, object?>.Values => Data.Values.Select(entry => entry.Value).ToList();
 
     int ICollection<KeyValuePair<string, object?>>.Count => Data.Count;
-    bool ICollection<KeyValuePair<string, object?>>.IsReadOnly => ((ICollection<KeyValuePair<string, (object? Value, Type? Type)>>)Data).IsReadOnly;
+    bool ICollection<KeyValuePair<string, object?>>.IsReadOnly => ((ICollection<KeyValuePair<string, TempDataValue>>)Data).IsReadOnly;
 
     void IDictionary<string, object?>.Add(string key, object? value)
     {
@@ -184,7 +184,7 @@ internal sealed class TempData : ITempData
     sealed class TempDataEnumerator : IEnumerator<KeyValuePair<string, object?>>
     {
         private readonly TempData _tempData;
-        private readonly IEnumerator<KeyValuePair<string, (object? Value, Type? Type)>> _innerEnumerator;
+        private readonly IEnumerator<KeyValuePair<string, TempDataValue>> _innerEnumerator;
         private readonly List<string> _keysToRemove = new();
 
         public TempDataEnumerator(TempData tempData)

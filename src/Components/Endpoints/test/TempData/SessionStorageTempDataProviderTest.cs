@@ -13,7 +13,7 @@ public class SessionStorageTempDataProviderTest
 
     internal TempData CreateTempData()
     {
-        return new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        return new TempData(() => new Dictionary<string, TempDataValue>());
     }
 
     public SessionStorageTempDataProviderTest()

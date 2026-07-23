@@ -150,7 +150,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip(object value, Type type)
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (value, type) }
         });
@@ -165,7 +165,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_Null()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (null, null) }
         });
@@ -180,7 +180,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_Enum()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (TestEnum.Value2, typeof(TestEnum)) }
         });
@@ -195,7 +195,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_EnumArray()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new TestEnum[] { TestEnum.Value1, TestEnum.Value2 }, typeof(TestEnum[])) }
         });
@@ -212,7 +212,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_List()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new List<int> { 1, 2, 3 }, typeof(List<int>)) }
         });
@@ -228,7 +228,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_HashSet()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new HashSet<int> { 1, 2, 3 }, typeof(HashSet<int>)) }
         });
@@ -244,7 +244,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_SortedSet()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new SortedSet<int> { 3, 1, 2 }, typeof(SortedSet<int>)) }
         });
@@ -260,7 +260,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_Collection()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new System.Collections.ObjectModel.Collection<int> { 1, 2, 3 }, typeof(System.Collections.ObjectModel.Collection<int>)) }
         });
@@ -276,7 +276,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_ObservableCollection()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new System.Collections.ObjectModel.ObservableCollection<int> { 1, 2, 3 }, typeof(System.Collections.ObjectModel.ObservableCollection<int>)) }
         });
@@ -292,7 +292,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_ListOfNullableElements()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new List<int?> { 1, null, 3 }, typeof(List<int?>)) }
         });
@@ -308,7 +308,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_DictionaryOfNullableElements()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new Dictionary<string, int?> { ["a"] = 1, ["b"] = null }, typeof(Dictionary<string, int?>)) }
         });
@@ -322,17 +322,17 @@ public class JsonStoredDataSerializerTest
     }
 
     [Fact]
-    public void SerializeData_UsesCompactTypeToken_WithoutAssemblyMetadata()
+    public void SerializeData_UsesTypeNameToken_WithoutAssemblyMetadata()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new Dictionary<string, int> { ["a"] = 1 }, typeof(Dictionary<string, int>)) }
         });
 
         var json = System.Text.Encoding.UTF8.GetString(serialized);
 
-        Assert.Contains("\"type\":\"dict[int]\"", json);
+        Assert.Contains("\"type\":\"System.Collections.Generic.Dictionary\\u00602[System.String,System.Int32]\"", json);
         Assert.DoesNotContain("Version=", json);
         Assert.DoesNotContain("PublicKeyToken", json);
     }
@@ -352,7 +352,7 @@ public class JsonStoredDataSerializerTest
     {
         var serializer = CreateSerializer();
         int? value = 42;
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (value, value?.GetType()) }
         });
@@ -369,7 +369,7 @@ public class JsonStoredDataSerializerTest
     {
         var serializer = CreateSerializer();
         bool? value = null;
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (value, value?.GetType()) }
         });
@@ -384,7 +384,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_NonNullValueWithNullType_UsesRuntimeType()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", ("hello", null) }
         });
@@ -399,7 +399,7 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_NestedArrays()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, (object Value, Type Type)>
+        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
         {
             { "key", (new object[] { new int[] { 1 }, new int[] { 2, 3, 4 } }, typeof(object[])) }
         });

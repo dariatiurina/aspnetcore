@@ -69,7 +69,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ReturnsNull_WhenKeyNotFound()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
 
@@ -82,7 +82,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ReturnsValue_WhenKeyExists()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["mykey"] = "myvalue";
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -96,7 +96,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_IsCaseInsensitive()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["MyKey"] = "myvalue";
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -110,7 +110,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ConvertsIntToEnum_WhenTargetTypeIsEnum()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["status"] = 1; // Stored as int (enums are serialized as int)
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -125,7 +125,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ConvertsIntToNullableEnum_WhenTargetTypeIsNullableEnum()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["status"] = 2;
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -140,7 +140,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ReturnsNull_WhenKeyNotFound_ForEnumType()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
 
@@ -169,7 +169,7 @@ public class TempDataSubscriptionTest
     public void GetValue_ReturnsNull_WhenStoredValueTypeDoesNotMatchTargetType()
     {
         // TempData has a string, but the component property expects an int
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["key"] = "not an int";
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -184,7 +184,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ReturnsNull_WhenStoredIntButTargetIsBool()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["key"] = 42;
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -198,7 +198,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetValue_ReturnsNull_WhenStoredBoolButTargetIsGuid()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["key"] = true;
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -212,7 +212,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void GetCurrentValue_ReturnsComponentValue_OnSubsequentCalls()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData["key"] = "original";
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -230,7 +230,7 @@ public class TempDataSubscriptionTest
     [Fact]
     public void CreateSubscription_RegistersValueCallbackAndReturnsSubscription()
     {
-        var tempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var tempData = new TempData(() => new Dictionary<string, TempDataValue>());
         tempData[nameof(TestComponent.Value)] = "from-tempdata";
         var httpContext = CreateHttpContextWithTempData(tempData);
         _supplier.SetRequestContext(httpContext);
@@ -246,7 +246,7 @@ public class TempDataSubscriptionTest
         Assert.Equal("from-tempdata", subscription.GetCurrentValue());
 
         _component.Value = "updated";
-        var persistedTempData = new TempData(() => new Dictionary<string, (object Value, Type Type)>());
+        var persistedTempData = new TempData(() => new Dictionary<string, TempDataValue>());
         _supplier.PersistValues(persistedTempData);
         Assert.Equal("updated", persistedTempData[nameof(TestComponent.Value)]);
     }

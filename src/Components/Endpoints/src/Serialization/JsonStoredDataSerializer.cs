@@ -13,70 +13,59 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     // These are taken from the set of types supported by TempDataDictionary in ASP.NET Core MVC
-    private static readonly Dictionary<Type, string> _scalarNames = new()
-    {
-        [typeof(int)] = "int",
-        [typeof(bool)] = "bool",
-        [typeof(string)] = "string",
-        [typeof(Guid)] = "guid",
-        [typeof(DateTime)] = "datetime",
-    };
+    private static readonly Type[] _scalarTypes =
+        [typeof(int), typeof(bool), typeof(string), typeof(Guid), typeof(DateTime)];
 
     // Enums are stored as their Int32 value, so only enums whose underlying type always fits in an Int32 are supported.
     private static readonly HashSet<Type> _int32EnumUnderlyingTypes =
         [typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int)];
 
-    // _typeToName is the allow-list of storable types. Compact tokens (e.g. "list[int]") keep payloads
-    // small for the size-limited cookie provider, and deserialization only ever resolves allow-listed
-    // types, so a tampered payload can't trigger arbitrary type resolution the way Type.FullName would.
+    // _supportedTypes is the allow-list of storable types. The stored "type" token is the type's own
+    // Type.ToString() (e.g. "System.Collections.Generic.List`1[System.Int32]"), which carries no
+    // assembly metadata, and deserialization only ever resolves allow-listed types, so a tampered
+    // payload can't trigger arbitrary type resolution the way Type.GetType(name) would.
     private static readonly Dictionary<string, Type> _nameToType = BuildNameToType();
-    private static readonly Dictionary<Type, string> _typeToName = BuildTypeToName(_nameToType);
+    private static readonly HashSet<Type> _supportedTypes = [.. _nameToType.Values];
+
+    private static string GetTypeName(Type type) => type.ToString();
 
     private static Dictionary<string, Type> BuildNameToType()
     {
         var map = new Dictionary<string, Type>(StringComparer.Ordinal);
 
-        foreach (var (scalar, name) in _scalarNames)
+        foreach (var scalar in _scalarTypes)
         {
-            map[name] = scalar;
-            AddCollectionTypeNames(map, scalar, name);
+            Add(map, scalar);
+            AddCollectionTypes(map, scalar);
 
             if (scalar.IsValueType)
             {
                 var nullable = typeof(Nullable<>).MakeGenericType(scalar);
-                map[$"{name}?"] = nullable;
-                AddCollectionTypeNames(map, nullable, $"{name}?");
+                Add(map, nullable);
+                AddCollectionTypes(map, nullable);
             }
         }
 
-        map["object[]"] = typeof(object[]);
+        Add(map, typeof(object[]));
         return map;
     }
 
-    private static void AddCollectionTypeNames(Dictionary<string, Type> map, Type element, string name)
+    private static void AddCollectionTypes(Dictionary<string, Type> map, Type element)
     {
-        map[$"{name}[]"] = element.MakeArrayType();
-        map[$"list[{name}]"] = typeof(List<>).MakeGenericType(element);
-        map[$"set[{name}]"] = typeof(HashSet<>).MakeGenericType(element);
-        map[$"sortedset[{name}]"] = typeof(SortedSet<>).MakeGenericType(element);
-        map[$"collection[{name}]"] = typeof(Collection<>).MakeGenericType(element);
-        map[$"observable[{name}]"] = typeof(ObservableCollection<>).MakeGenericType(element);
-        map[$"dict[{name}]"] = typeof(Dictionary<,>).MakeGenericType(typeof(string), element);
+        Add(map, element.MakeArrayType());
+        Add(map, typeof(List<>).MakeGenericType(element));
+        Add(map, typeof(HashSet<>).MakeGenericType(element));
+        Add(map, typeof(SortedSet<>).MakeGenericType(element));
+        Add(map, typeof(Collection<>).MakeGenericType(element));
+        Add(map, typeof(ObservableCollection<>).MakeGenericType(element));
+        Add(map, typeof(Dictionary<,>).MakeGenericType(typeof(string), element));
     }
 
-    private static Dictionary<Type, string> BuildTypeToName(Dictionary<string, Type> nameToType)
-    {
-        var map = new Dictionary<Type, string>();
-        foreach (var (name, type) in nameToType)
-        {
-            map[type] = name;
-        }
-        return map;
-    }
+    private static void Add(Dictionary<string, Type> map, Type type) => map[GetTypeName(type)] = type;
 
-    public IDictionary<string, (object? Value, Type? Type)> DeserializeData(IDictionary<string, JsonElement> data)
+    public IDictionary<string, TempDataValue> DeserializeData(IDictionary<string, JsonElement> data)
     {
-        var result = new Dictionary<string, (object? Value, Type? Type)>(data.Count);
+        var result = new Dictionary<string, TempDataValue>(data.Count);
 
         foreach (var (key, element) in data)
         {
@@ -85,11 +74,11 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return result;
     }
 
-    private static (object? Value, Type? Type) DeserializeEntry(JsonElement element)
+    private static TempDataValue DeserializeEntry(JsonElement element)
     {
         if (element.ValueKind is JsonValueKind.Null)
         {
-            return (null, null);
+            return default;
         }
 
         var typeName = element.GetProperty("type").GetString()!;
@@ -110,23 +99,23 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
             {
                 array[index++] = DeserializeEntry(item).Value;
             }
-            return (array, type);
+            return new TempDataValue(array, type);
         }
 
         var value = JsonSerializer.Deserialize(valueElement, type, _options);
-        return (value, type);
+        return new TempDataValue(value, type);
     }
 
     public bool CanSerialize(Type type) => TryGetStorageType(type, out _);
 
     // Resolves the storage type for a runtime type, or returns false if it can't be serialized.
-    // _typeToName is checked first so pre-registered kinds (scalars, nullables, arrays, List/HashSet/
+    // _supportedTypes is checked first so pre-registered kinds (scalars, nullables, arrays, List/HashSet/
     // SortedSet/Collection/ObservableCollection, Dictionary<string,T>, object[]) win. Enums fall back to
-    // their Int32 (or Int32[]) form. Checking _typeToName first keeps the intentional asymmetry that
+    // their Int32 (or Int32[]) form. Checking _supportedTypes first keeps the intentional asymmetry that
     // enum arrays are supported while enum-element collections (e.g. List<enum>) are not.
     private static bool TryGetStorageType(Type type, out Type storageType)
     {
-        if (_typeToName.ContainsKey(type))
+        if (_supportedTypes.Contains(type))
         {
             storageType = type;
             return true;
@@ -151,7 +140,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
     private static bool IsInt32Enum(Type type)
         => type.IsEnum && _int32EnumUnderlyingTypes.Contains(type.GetEnumUnderlyingType());
 
-    public byte[] SerializeData(IDictionary<string, (object? Value, Type? Type)> data)
+    public byte[] SerializeData(IDictionary<string, TempDataValue> data)
     {
         using var buffer = new MemoryStream();
         using var writer = new Utf8JsonWriter(buffer);
@@ -187,7 +176,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         var writeValue = NormalizeEnums(value, valueType, storageType);
 
         writer.WriteStartObject();
-        writer.WriteString("type", _typeToName[storageType]);
+        writer.WriteString("type", GetTypeName(storageType));
         writer.WritePropertyName("value");
 
         // object[] is the only kind stored recursively (each element carries its own type token),
@@ -220,7 +209,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return buffer.ToArray();
     }
 
-    public (object? Value, Type? Type) DeserializeValue(ReadOnlySpan<byte> utf8Json)
+    public TempDataValue DeserializeValue(ReadOnlySpan<byte> utf8Json)
     {
         var element = JsonSerializer.Deserialize<JsonElement>(utf8Json, _options);
         return DeserializeEntry(element);
