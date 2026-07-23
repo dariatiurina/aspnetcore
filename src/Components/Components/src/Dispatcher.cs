@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Sections;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -26,9 +27,10 @@ public abstract class Dispatcher
     internal event UnhandledExceptionEventHandler? UnhandledException;
 
     /// <summary>
-    /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher.
+    /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher, creating it
+    /// with the given <paramref name="loggerFactory"/> on first use so it can emit Sections diagnostics.
     /// </summary>
-    internal SectionRegistry SectionRegistry => _sectionRegistry ??= new();
+    internal SectionRegistry GetSectionRegistry(ILoggerFactory? loggerFactory) => _sectionRegistry ??= new(loggerFactory);
 
     /// <summary>
     /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher if one has

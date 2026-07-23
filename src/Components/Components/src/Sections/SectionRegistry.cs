@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components.Sections;
 
-internal sealed partial class SectionRegistry
+internal sealed partial class SectionRegistry(ILoggerFactory? loggerFactory)
 {
     private readonly Dictionary<object, SectionOutlet> _subscribersByIdentifier = new();
     private readonly Dictionary<object, List<SectionContent>> _providersByIdentifier = new();
 
-    private ILogger? _logger;
+    private readonly ILogger? _logger = loggerFactory?.CreateLogger("Microsoft.AspNetCore.Components.Sections.SectionRegistry");
 
     private HashSet<object>? _identifiersPendingOrphanCheck;
 
@@ -18,14 +18,6 @@ internal sealed partial class SectionRegistry
     private HashSet<object>? _mismatchLoggedIdentifiers;
 
     private HashSet<object>? _orphanLoggedIdentifiers;
-
-    public void EnsureLogger(ILoggerFactory? loggerFactory)
-    {
-        if (_logger is null && loggerFactory is not null)
-        {
-            _logger = loggerFactory.CreateLogger("Microsoft.AspNetCore.Components.Sections.SectionRegistry");
-        }
-    }
 
     public void AddProvider(object identifier, SectionContent provider, bool isDefaultProvider)
     {

@@ -40,8 +40,7 @@ public sealed class SectionContent : IComponent, IDisposable
     void IComponent.Attach(RenderHandle renderHandle)
     {
         SectionRenderMode = renderHandle.RenderMode;
-        _registry = renderHandle.Dispatcher.SectionRegistry;
-        _registry.EnsureLogger(renderHandle.LoggerFactory);
+        _registry = renderHandle.Dispatcher.GetSectionRegistry(renderHandle.LoggerFactory);
     }
 
     Task IComponent.SetParametersAsync(ParameterView parameters)
