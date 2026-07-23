@@ -13,17 +13,12 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     // These are taken from the set of types supported by TempDataDictionary in ASP.NET Core MVC
-    private static readonly Type[] _scalarTypes =
-        [typeof(int), typeof(bool), typeof(string), typeof(Guid), typeof(DateTime)];
+    private static readonly Type[] _scalarTypes =[typeof(int), typeof(bool), typeof(string), typeof(Guid), typeof(DateTime)];
 
     // Enums are stored as their Int32 value, so only enums whose underlying type always fits in an Int32 are supported.
     private static readonly HashSet<Type> _int32EnumUnderlyingTypes =
         [typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int)];
 
-    // _supportedTypes is the allow-list of storable types. The stored "type" token is the type's own
-    // Type.ToString() (e.g. "System.Collections.Generic.List`1[System.Int32]"), which carries no
-    // assembly metadata, and deserialization only ever resolves allow-listed types, so a tampered
-    // payload can't trigger arbitrary type resolution the way Type.GetType(name) would.
     private static readonly Dictionary<string, Type> _nameToType = BuildNameToType();
     private static readonly HashSet<Type> _supportedTypes = [.. _nameToType.Values];
 
@@ -108,11 +103,6 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
 
     public bool CanSerialize(Type type) => TryGetStorageType(type, out _);
 
-    // Resolves the storage type for a runtime type, or returns false if it can't be serialized.
-    // _supportedTypes is checked first so pre-registered kinds (scalars, nullables, arrays, List/HashSet/
-    // SortedSet/Collection/ObservableCollection, Dictionary<string,T>, object[]) win. Enums fall back to
-    // their Int32 (or Int32[]) form. Checking _supportedTypes first keeps the intentional asymmetry that
-    // enum arrays are supported while enum-element collections (e.g. List<enum>) are not.
     private static bool TryGetStorageType(Type type, out Type storageType)
     {
         if (_supportedTypes.Contains(type))
