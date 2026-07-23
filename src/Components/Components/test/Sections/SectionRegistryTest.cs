@@ -205,11 +205,13 @@ public class SectionRegistryTest
 
         public void RenderRootComponent(int componentId)
         {
-            var task = Dispatcher.InvokeAsync(() => RenderRootComponentAsync(componentId));
-            Assert.True(task.IsCompleted);
-            if (task.IsFaulted)
+            try
             {
-                ExceptionDispatchInfo.Capture(task.Exception!.Flatten().InnerException!).Throw();
+                Dispatcher.InvokeAsync(() => RenderRootComponentAsync(componentId)).GetAwaiter().GetResult();
+            }
+            catch (Exception exception)
+            {
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
         }
 

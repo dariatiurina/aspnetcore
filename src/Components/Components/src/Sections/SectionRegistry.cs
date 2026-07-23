@@ -157,6 +157,12 @@ internal sealed partial class SectionRegistry
         var hasSubscriber = _subscribersByIdentifier.ContainsKey(identifier);
         var hasProvider = _providersByIdentifier.TryGetValue(identifier, out var providers) && providers.Count != 0;
 
+        // If one side is missing (or both were removed), any previously logged render mode mismatch is resolved.
+        if (!(hasSubscriber && hasProvider))
+        {
+            _mismatchLoggedIdentifiers?.Remove(identifier);
+        }
+
         if (hasSubscriber == hasProvider)
         {
             _orphanLoggedIdentifiers?.Remove(identifier);
