@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components.HotReload;
 using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -23,6 +24,8 @@ public readonly struct RenderHandle
 
     internal ComponentsMetrics? ComponentMetrics => _renderer?.ComponentMetrics;
     internal ComponentsActivitySource? ComponentActivitySource => _renderer?.ComponentActivitySource;
+
+    internal ILoggerFactory? LoggerFactory => _renderer?.LoggerFactory;
 
     /// <summary>
     /// Gets the <see cref="Components.Dispatcher" /> associated with the component.

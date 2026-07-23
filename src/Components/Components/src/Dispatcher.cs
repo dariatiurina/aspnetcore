@@ -31,6 +31,13 @@ public abstract class Dispatcher
     internal SectionRegistry SectionRegistry => _sectionRegistry ??= new();
 
     /// <summary>
+    /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher if one has
+    /// already been created, without allocating a new one. Used by the renderer to flush deferred
+    /// Sections diagnostics only when Sections are actually in use.
+    /// </summary>
+    internal SectionRegistry? SectionRegistryIfExists => _sectionRegistry;
+
+    /// <summary>
     /// Validates that the currently executing code is running inside the dispatcher.
     /// </summary>
     public void AssertAccess()

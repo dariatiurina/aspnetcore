@@ -12,6 +12,8 @@ public sealed class SectionContent : IComponent, IDisposable
     private bool? _registeredIsDefaultContent;
     private SectionRegistry _registry = default!;
 
+    internal IComponentRenderMode? SectionRenderMode { get; private set; }
+
     /// <summary>
     /// Gets or sets the <see cref="string"/> ID that determines which <see cref="SectionOutlet"/> instance will render
     /// the content of this instance.
@@ -37,7 +39,9 @@ public sealed class SectionContent : IComponent, IDisposable
 
     void IComponent.Attach(RenderHandle renderHandle)
     {
+        SectionRenderMode = renderHandle.RenderMode;
         _registry = renderHandle.Dispatcher.SectionRegistry;
+        _registry.EnsureLogger(renderHandle.LoggerFactory);
     }
 
     Task IComponent.SetParametersAsync(ParameterView parameters)
