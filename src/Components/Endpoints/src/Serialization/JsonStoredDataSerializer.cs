@@ -1,62 +1,82 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.ObjectModel;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Microsoft.AspNetCore.Internal;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
+// Serializes a limited set of types for TempData/Session. The value is (de)serialized directly by
+// System.Text.Json against its real CLR type: on write we save the type (its assembly-qualified name),
+// and on read we recover it with Type.GetType and hand it back to STJ. This means enums and exact
+// collection types round-trip faithfully, and there is no hand-maintained name->Type table. Supported
+// types are limited by a structural allowlist that is only enforced during serialization (and re-checked
+// on read as a guard, since the payload is integrity-protected by the cookie/session providers).
 internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
-    // These are taken from the set of types supported by TempDataDictionary in ASP.NET Core MVC
-    private static readonly Type[] _scalarTypes =[typeof(int), typeof(bool), typeof(string), typeof(Guid), typeof(DateTime)];
+    // The one kind stored recursively: each element carries its own type token.
+    private static readonly Type ObjectArrayType = typeof(object[]);
 
-    // Enums are stored as their Int32 value, so only enums whose underlying type always fits in an Int32 are supported.
-    private static readonly HashSet<Type> _int32EnumUnderlyingTypes =
-        [typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int)];
+    // Supported single-argument collection shapes. Dictionary<string, T> is handled separately.
+    private static readonly HashSet<Type> _supportedCollectionDefinitions =
+    [
+        typeof(List<>),
+        typeof(HashSet<>),
+        typeof(SortedSet<>),
+        typeof(System.Collections.ObjectModel.Collection<>),
+        typeof(System.Collections.ObjectModel.ObservableCollection<>),
+    ];
 
-    private static readonly Dictionary<string, Type> _nameToType = BuildNameToType();
-    private static readonly HashSet<Type> _supportedTypes = [.. _nameToType.Values];
-
-    private static string GetTypeName(Type type) => type.ToString();
-
-    private static Dictionary<string, Type> BuildNameToType()
+    public bool CanSerialize(Type type)
     {
-        var map = new Dictionary<string, Type>(StringComparer.Ordinal);
-
-        foreach (var scalar in _scalarTypes)
+        if (type == ObjectArrayType)
         {
-            Add(map, scalar);
-            AddCollectionTypes(map, scalar);
+            return true;
+        }
 
-            if (scalar.IsValueType)
+        if (IsSupportedElement(type))
+        {
+            return true;
+        }
+
+        if (type.IsSZArray)
+        {
+            return IsSupportedElement(type.GetElementType()!);
+        }
+
+        if (type.IsGenericType)
+        {
+            var definition = type.GetGenericTypeDefinition();
+            var arguments = type.GetGenericArguments();
+
+            if (definition == typeof(Dictionary<,>))
             {
-                var nullable = typeof(Nullable<>).MakeGenericType(scalar);
-                Add(map, nullable);
-                AddCollectionTypes(map, nullable);
+                return arguments[0] == typeof(string) && IsSupportedElement(arguments[1]);
+            }
+
+            if (_supportedCollectionDefinitions.Contains(definition))
+            {
+                return IsSupportedElement(arguments[0]);
             }
         }
 
-        Add(map, typeof(object[]));
-        return map;
+        return false;
     }
 
-    private static void AddCollectionTypes(Dictionary<string, Type> map, Type element)
+    private static bool IsSupportedElement(Type type)
     {
-        Add(map, element.MakeArrayType());
-        Add(map, typeof(List<>).MakeGenericType(element));
-        Add(map, typeof(HashSet<>).MakeGenericType(element));
-        Add(map, typeof(SortedSet<>).MakeGenericType(element));
-        Add(map, typeof(Collection<>).MakeGenericType(element));
-        Add(map, typeof(ObservableCollection<>).MakeGenericType(element));
-        Add(map, typeof(Dictionary<,>).MakeGenericType(typeof(string), element));
-    }
+        type = Nullable.GetUnderlyingType(type) ?? type;
 
-    private static void Add(Dictionary<string, Type> map, Type type) => map[GetTypeName(type)] = type;
+        return type == typeof(int)
+            || type == typeof(bool)
+            || type == typeof(string)
+            || type == typeof(Guid)
+            || type == typeof(DateTime)
+            || type.IsEnum;
+    }
 
     public IDictionary<string, TempDataValue> DeserializeData(IDictionary<string, JsonElement> data)
     {
@@ -69,7 +89,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return result;
     }
 
-    private static TempDataValue DeserializeEntry(JsonElement element)
+    private TempDataValue DeserializeEntry(JsonElement element)
     {
         if (element.ValueKind is JsonValueKind.Null)
         {
@@ -78,15 +98,11 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
 
         var typeName = element.GetProperty("type").GetString()!;
         var valueElement = element.GetProperty("value");
-
-        if (!_nameToType.TryGetValue(typeName, out var type))
-        {
-            throw new InvalidOperationException($"Cannot deserialize type '{typeName}'.");
-        }
+        var type = ResolveType(typeName);
 
         // object[] is the only kind stored recursively (each element carries its own type token),
         // so it is rebuilt element-by-element rather than delegated to System.Text.Json.
-        if (type == typeof(object[]))
+        if (type == ObjectArrayType)
         {
             var array = new object?[valueElement.GetArrayLength()];
             var index = 0;
@@ -101,34 +117,19 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return new TempDataValue(value, type);
     }
 
-    public bool CanSerialize(Type type) => TryGetStorageType(type, out _);
-
-    private static bool TryGetStorageType(Type type, out Type storageType)
+    [return: DynamicallyAccessedMembers(LinkerFlags.JsonSerialized)]
+    private Type ResolveType(string typeName)
     {
-        if (_supportedTypes.Contains(type))
+        var type = Type.GetType(typeName, throwOnError: false);
+
+        // Guard against tampered/unknown tokens: only allow types we would have serialized ourselves.
+        if (type is null || !CanSerialize(type))
         {
-            storageType = type;
-            return true;
+            throw new InvalidOperationException($"Cannot deserialize type '{typeName}'.");
         }
 
-        if (IsInt32Enum(type))
-        {
-            storageType = typeof(int);
-            return true;
-        }
-
-        if (type.IsArray && IsInt32Enum(type.GetElementType()!))
-        {
-            storageType = typeof(int[]);
-            return true;
-        }
-
-        storageType = type;
-        return false;
+        return type;
     }
-
-    private static bool IsInt32Enum(Type type)
-        => type.IsEnum && _int32EnumUnderlyingTypes.Contains(type.GetEnumUnderlyingType());
 
     public byte[] SerializeData(IDictionary<string, TempDataValue> data)
     {
@@ -149,7 +150,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return buffer.ToArray();
     }
 
-    private static void WriteEntry(Utf8JsonWriter writer, object? value, Type? type)
+    private void WriteEntry(Utf8JsonWriter writer, object? value, Type? type)
     {
         if (value is null)
         {
@@ -158,23 +159,21 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         }
 
         var valueType = type ?? value.GetType();
-        if (!TryGetStorageType(valueType, out var storageType))
+        if (!CanSerialize(valueType))
         {
             throw new InvalidOperationException($"Cannot serialize type '{valueType}'.");
         }
 
-        var writeValue = NormalizeEnums(value, valueType, storageType);
-
         writer.WriteStartObject();
-        writer.WriteString("type", GetTypeName(storageType));
+        writer.WriteString("type", valueType.AssemblyQualifiedName);
         writer.WritePropertyName("value");
 
         // object[] is the only kind stored recursively (each element carries its own type token),
         // so it is written element-by-element rather than delegated to System.Text.Json.
-        if (storageType == typeof(object[]))
+        if (valueType == ObjectArrayType)
         {
             writer.WriteStartArray();
-            foreach (var item in (object?[])writeValue)
+            foreach (var item in (object?[])value)
             {
                 WriteEntry(writer, item, item?.GetType());
             }
@@ -182,7 +181,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         }
         else
         {
-            JsonSerializer.Serialize(writer, writeValue, storageType, _options);
+            JsonSerializer.Serialize(writer, value, valueType, _options);
         }
 
         writer.WriteEndObject();
@@ -203,32 +202,5 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
     {
         var element = JsonSerializer.Deserialize<JsonElement>(utf8Json, _options);
         return DeserializeEntry(element);
-    }
-
-    // Enums have no direct JSON representation, so they are converted to their Int32 form to match
-    // the "int"/"int[]" storage type resolved by TryGetStorageType. All other values pass through.
-    private static object NormalizeEnums(object value, Type valueType, Type storageType)
-    {
-        if (storageType == typeof(int) && valueType.IsEnum)
-        {
-            return Convert.ToInt32(value, CultureInfo.InvariantCulture);
-        }
-
-        if (storageType == typeof(int[]) && valueType != typeof(int[]))
-        {
-            return ConvertEnumsToInts((IEnumerable)value);
-        }
-
-        return value;
-    }
-
-    private static int[] ConvertEnumsToInts(IEnumerable values)
-    {
-        var result = new List<int>();
-        foreach (var item in values)
-        {
-            result.Add(Convert.ToInt32(item, CultureInfo.InvariantCulture));
-        }
-        return result.ToArray();
     }
 }
