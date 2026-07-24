@@ -56,7 +56,7 @@ internal sealed class TempData : ITempData
 
     public object? Peek(string key)
     {
-        return Data.TryGetValue(key, out var value) ? value : null;
+        return Data.GetValueOrDefault(key);
     }
 
     public void Keep()
@@ -131,7 +131,6 @@ internal sealed class TempData : ITempData
             _retainedKeys.Remove(key);
             return true;
         }
-        value = null;
         return false;
     }
 
@@ -147,17 +146,7 @@ internal sealed class TempData : ITempData
 
     void ICollection<KeyValuePair<string, object?>>.CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
     {
-        ArgumentNullException.ThrowIfNull(array);
-        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
-        if (array.Length - arrayIndex < Data.Count)
-        {
-            throw new ArgumentException("The destination array is not large enough to copy all the items in the collection. Check the array index and length.", nameof(array));
-        }
-
-        foreach (var kvp in Data)
-        {
-            array[arrayIndex++] = new KeyValuePair<string, object?>(kvp.Key, kvp.Value);
-        }
+        ((ICollection<KeyValuePair<string, object?>>)Data).CopyTo(array, arrayIndex);
     }
 
     bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item)
@@ -197,11 +186,11 @@ internal sealed class TempData : ITempData
             {
                 var kvp = _innerEnumerator.Current;
                 _keysToRemove.Add(kvp.Key);
-                return new KeyValuePair<string, object?>(kvp.Key, kvp.Value);
+                return kvp;
             }
         }
 
-        object IEnumerator.Current => Current;
+        object IEnumerator.Current => _innerEnumerator.Current;
 
         public void Dispose()
         {

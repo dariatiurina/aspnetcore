@@ -64,7 +64,6 @@ internal sealed partial class SessionStorageTempDataProvider : ITempDataProvider
         }
 
         var bytes = _tempDataSerializer.SerializeData(values);
-
         session.Set(TempDataSessionStateKey, bytes);
         Log.TempDataSessionSaveSuccess(_logger);
     }
