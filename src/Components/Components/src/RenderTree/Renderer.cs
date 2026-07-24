@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Components.HotReload;
 using Microsoft.AspNetCore.Components.Infrastructure;
 using Microsoft.AspNetCore.Components.Reflection;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Sections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Microsoft.AspNetCore.Internal.LinkerFlags;
@@ -38,6 +39,7 @@ public abstract partial class Renderer : IDisposable, IAsyncDisposable
     private readonly Dictionary<ulong, ulong> _eventHandlerIdReplacements = new Dictionary<ulong, ulong>();
     private readonly ILogger _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private SectionRegistry? _sectionRegistry;
     private readonly ComponentFactory _componentFactory;
     private readonly ComponentsMetrics? _componentsMetrics;
     private readonly ComponentsActivitySource? _componentsActivitySource;
@@ -122,6 +124,8 @@ public abstract partial class Renderer : IDisposable, IAsyncDisposable
     internal ComponentsActivitySource? ComponentActivitySource => _componentsActivitySource;
 
     internal ILoggerFactory LoggerFactory => _loggerFactory;
+
+    internal SectionRegistry SectionRegistry => _sectionRegistry ??= new SectionRegistry(_loggerFactory);
 
     internal ICascadingValueSupplier[] ServiceProviderCascadingValueSuppliers { get; }
 
@@ -907,7 +911,7 @@ public abstract partial class Renderer : IDisposable, IAsyncDisposable
             ProcessRenderQueue();
         }
 
-        Dispatcher.SectionRegistryIfExists?.OnRenderBatchCompleted();
+        _sectionRegistry?.OnRenderBatchCompleted();
     }
 
     private Task InvokeRenderCompletedCalls(ArrayRange<RenderTreeDiff> updatedComponents, Task updateDisplayTask)

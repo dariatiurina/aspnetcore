@@ -36,7 +36,7 @@ public sealed class SectionOutlet : IComponent, IDisposable
     {
         _renderHandle = renderHandle;
         SectionRenderMode = renderHandle.RenderMode;
-        _registry = _renderHandle.Dispatcher.GetSectionRegistry(_renderHandle.LoggerFactory);
+        _registry = _renderHandle.SectionRegistry;
     }
 
     Task IComponent.SetParametersAsync(ParameterView parameters)

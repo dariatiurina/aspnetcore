@@ -3,8 +3,6 @@
 
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.RenderTree;
-using Microsoft.AspNetCore.Components.Sections;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -13,8 +11,6 @@ namespace Microsoft.AspNetCore.Components;
 /// </summary>
 public abstract class Dispatcher
 {
-    private SectionRegistry? _sectionRegistry;
-
     /// <summary>
     /// Creates a default instance of <see cref="Dispatcher"/>.
     /// </summary>
@@ -25,19 +21,6 @@ public abstract class Dispatcher
     /// Provides notifications of unhandled exceptions that occur within the dispatcher.
     /// </summary>
     internal event UnhandledExceptionEventHandler? UnhandledException;
-
-    /// <summary>
-    /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher, creating it
-    /// with the given <paramref name="loggerFactory"/> on first use so it can emit Sections diagnostics.
-    /// </summary>
-    internal SectionRegistry GetSectionRegistry(ILoggerFactory? loggerFactory) => _sectionRegistry ??= new(loggerFactory);
-
-    /// <summary>
-    /// Gets the <see cref="Sections.SectionRegistry"/> associated with the dispatcher if one has
-    /// already been created, without allocating a new one. Used by the renderer to flush deferred
-    /// Sections diagnostics only when Sections are actually in use.
-    /// </summary>
-    internal SectionRegistry? SectionRegistryIfExists => _sectionRegistry;
 
     /// <summary>
     /// Validates that the currently executing code is running inside the dispatcher.
