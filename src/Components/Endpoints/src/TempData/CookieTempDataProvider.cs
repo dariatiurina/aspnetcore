@@ -127,7 +127,6 @@ internal sealed partial class CookieTempDataProvider : ITempDataProvider
         }
 
         var bytes = _tempDataSerializer.SerializeData(values);
-
         var protectedBytes = _dataProtector.Protect(bytes);
         var encodedValue = Base64Url.EncodeToString(protectedBytes);
         _chunkingCookieManager.AppendResponseCookie(context, cookieName, encodedValue, cookieOptions);
