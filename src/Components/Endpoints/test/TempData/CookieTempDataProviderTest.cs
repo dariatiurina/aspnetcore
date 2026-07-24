@@ -16,7 +16,7 @@ public class CookieTempDataProviderTest
 
     internal TempData CreateTempData()
     {
-        return new TempData(() => new Dictionary<string, TempDataValue>());
+        return new TempData(() => new Dictionary<string, object>());
     }
 
     public CookieTempDataProviderTest()
@@ -103,8 +103,8 @@ public class CookieTempDataProviderTest
         SimulateCookieRoundTrip(httpContext);
         var loadedTempData = _cookieTempDataProvider.LoadTempData(httpContext);
 
-        Assert.Equal("StringValue", loadedTempData["StringKey"].Value);
-        Assert.Equal(42, loadedTempData["IntKey"].Value);
+        Assert.Equal("StringValue", loadedTempData["StringKey"]);
+        Assert.Equal(42, loadedTempData["IntKey"]);
     }
 
     private static DefaultHttpContext CreateHttpContext()

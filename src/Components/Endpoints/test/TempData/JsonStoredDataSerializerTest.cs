@@ -153,61 +153,62 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip(object value, Type type)
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        Assert.True(serializer.CanSerialize(type));
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (value, type) }
+            { "key", value }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        Assert.Equal(value, result["key"].Value);
+        Assert.Equal(value, result["key"]);
     }
 
     [Fact]
     public void RoundTrip_Null()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (null, null) }
+            { "key", null }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        Assert.Null(result["key"].Value);
+        Assert.Null(result["key"]);
     }
 
     [Fact]
     public void RoundTrip_Enum()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (TestEnum.Value2, typeof(TestEnum)) }
+            { "key", TestEnum.Value2 }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
         // The value is deserialized back into its real enum type, not its underlying int.
-        Assert.Equal(TestEnum.Value2, result["key"].Value);
+        Assert.Equal(TestEnum.Value2, result["key"]);
     }
 
     [Fact]
     public void RoundTrip_EnumArray()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new TestEnum[] { TestEnum.Value1, TestEnum.Value2 }, typeof(TestEnum[])) }
+            { "key", new TestEnum[] { TestEnum.Value1, TestEnum.Value2 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var array = Assert.IsType<TestEnum[]>(result["key"].Value);
+        var array = Assert.IsType<TestEnum[]>(result["key"]);
         Assert.Equal(TestEnum.Value1, array[0]);
         Assert.Equal(TestEnum.Value2, array[1]);
     }
@@ -216,31 +217,31 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_LongBackedEnum()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (LongEnum.Big, typeof(LongEnum)) }
+            { "key", LongEnum.Big }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
         // Any enum is supported now, not just Int32-backed ones.
-        Assert.Equal(LongEnum.Big, result["key"].Value);
+        Assert.Equal(LongEnum.Big, result["key"]);
     }
 
     [Fact]
     public void RoundTrip_EnumList()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 }, typeof(List<TestEnum>)) }
+            { "key", new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var list = Assert.IsType<List<TestEnum>>(result["key"].Value);
+        var list = Assert.IsType<List<TestEnum>>(result["key"]);
         Assert.Equal(new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 }, list);
     }
 
@@ -248,15 +249,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_EnumHashSet()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new HashSet<TestEnum> { TestEnum.Value1, TestEnum.Value2 }, typeof(HashSet<TestEnum>)) }
+            { "key", new HashSet<TestEnum> { TestEnum.Value1, TestEnum.Value2 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var set = Assert.IsType<HashSet<TestEnum>>(result["key"].Value);
+        var set = Assert.IsType<HashSet<TestEnum>>(result["key"]);
         Assert.Equal(new HashSet<TestEnum> { TestEnum.Value1, TestEnum.Value2 }, set);
     }
 
@@ -264,15 +265,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_EnumDictionary()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new Dictionary<string, TestEnum> { ["a"] = TestEnum.Value1, ["b"] = TestEnum.Value2 }, typeof(Dictionary<string, TestEnum>)) }
+            { "key", new Dictionary<string, TestEnum> { ["a"] = TestEnum.Value1, ["b"] = TestEnum.Value2 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var dictionary = Assert.IsType<Dictionary<string, TestEnum>>(result["key"].Value);
+        var dictionary = Assert.IsType<Dictionary<string, TestEnum>>(result["key"]);
         Assert.Equal(TestEnum.Value1, dictionary["a"]);
         Assert.Equal(TestEnum.Value2, dictionary["b"]);
     }
@@ -281,15 +282,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_List()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new List<int> { 1, 2, 3 }, typeof(List<int>)) }
+            { "key", new List<int> { 1, 2, 3 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var list = Assert.IsType<List<int>>(result["key"].Value);
+        var list = Assert.IsType<List<int>>(result["key"]);
         Assert.Equal(new List<int> { 1, 2, 3 }, list);
     }
 
@@ -297,15 +298,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_HashSet()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new HashSet<int> { 1, 2, 3 }, typeof(HashSet<int>)) }
+            { "key", new HashSet<int> { 1, 2, 3 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var set = Assert.IsType<HashSet<int>>(result["key"].Value);
+        var set = Assert.IsType<HashSet<int>>(result["key"]);
         Assert.Equal(new HashSet<int> { 1, 2, 3 }, set);
     }
 
@@ -313,15 +314,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_SortedSet()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new SortedSet<int> { 3, 1, 2 }, typeof(SortedSet<int>)) }
+            { "key", new SortedSet<int> { 3, 1, 2 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var set = Assert.IsType<SortedSet<int>>(result["key"].Value);
+        var set = Assert.IsType<SortedSet<int>>(result["key"]);
         Assert.Equal(new SortedSet<int> { 1, 2, 3 }, set);
     }
 
@@ -329,15 +330,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_Collection()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new System.Collections.ObjectModel.Collection<int> { 1, 2, 3 }, typeof(System.Collections.ObjectModel.Collection<int>)) }
+            { "key", new System.Collections.ObjectModel.Collection<int> { 1, 2, 3 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var collection = Assert.IsType<System.Collections.ObjectModel.Collection<int>>(result["key"].Value);
+        var collection = Assert.IsType<System.Collections.ObjectModel.Collection<int>>(result["key"]);
         Assert.Equal(new[] { 1, 2, 3 }, collection);
     }
 
@@ -345,15 +346,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_ObservableCollection()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new System.Collections.ObjectModel.ObservableCollection<int> { 1, 2, 3 }, typeof(System.Collections.ObjectModel.ObservableCollection<int>)) }
+            { "key", new System.Collections.ObjectModel.ObservableCollection<int> { 1, 2, 3 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var collection = Assert.IsType<System.Collections.ObjectModel.ObservableCollection<int>>(result["key"].Value);
+        var collection = Assert.IsType<System.Collections.ObjectModel.ObservableCollection<int>>(result["key"]);
         Assert.Equal(new[] { 1, 2, 3 }, collection);
     }
 
@@ -361,15 +362,15 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_ListOfNullableElements()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new List<int?> { 1, null, 3 }, typeof(List<int?>)) }
+            { "key", new List<int?> { 1, null, 3 } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var list = Assert.IsType<List<int?>>(result["key"].Value);
+        var list = Assert.IsType<List<int?>>(result["key"]);
         Assert.Equal(new List<int?> { 1, null, 3 }, list);
     }
 
@@ -377,26 +378,26 @@ public class JsonStoredDataSerializerTest
     public void RoundTrip_DictionaryOfNullableElements()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new Dictionary<string, int?> { ["a"] = 1, ["b"] = null }, typeof(Dictionary<string, int?>)) }
+            { "key", new Dictionary<string, int?> { ["a"] = 1, ["b"] = null } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var dictionary = Assert.IsType<Dictionary<string, int?>>(result["key"].Value);
+        var dictionary = Assert.IsType<Dictionary<string, int?>>(result["key"]);
         Assert.Equal(1, dictionary["a"]);
         Assert.Null(dictionary["b"]);
     }
 
     [Fact]
-    public void SerializeData_UsesTypeNameToken_WithoutAssemblyMetadata()
+    public void SerializeData_UsesAssemblyQualifiedTypeName()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new Dictionary<string, int> { ["a"] = 1 }, typeof(Dictionary<string, int>)) }
+            { "key", new Dictionary<string, int> { ["a"] = 1 } }
         });
 
         var json = System.Text.Encoding.UTF8.GetString(serialized);
@@ -421,16 +422,16 @@ public class JsonStoredDataSerializerTest
     {
         var serializer = CreateSerializer();
         int? value = 42;
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (value, value?.GetType()) }
+            { "key", value }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        Assert.IsType<int>(result["key"].Value);
-        Assert.Equal(42, result["key"].Value);
+        Assert.IsType<int>(result["key"]);
+        Assert.Equal(42, result["key"]);
     }
 
     [Fact]
@@ -438,45 +439,45 @@ public class JsonStoredDataSerializerTest
     {
         var serializer = CreateSerializer();
         bool? value = null;
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (value, value?.GetType()) }
+            { "key", value }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        Assert.Null(result["key"].Value);
+        Assert.Null(result["key"]);
     }
 
     [Fact]
     public void RoundTrip_NonNullValueWithNullType_UsesRuntimeType()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", ("hello", null) }
+            { "key", "hello" }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        Assert.Equal("hello", result["key"].Value);
+        Assert.Equal("hello", result["key"]);
     }
 
     [Fact]
     public void RoundTrip_NestedArrays()
     {
         var serializer = CreateSerializer();
-        var serialized = serializer.SerializeData(new Dictionary<string, TempDataValue>
+        var serialized = serializer.SerializeData(new Dictionary<string, object>
         {
-            { "key", (new object[] { new int[] { 1 }, new int[] { 2, 3, 4 } }, typeof(object[])) }
+            { "key", new object[] { new int[] { 1 }, new int[] { 2, 3, 4 } } }
         });
 
         var jsonDocument = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(serialized);
         var result = serializer.DeserializeData(jsonDocument!);
 
-        var array = Assert.IsType<object[]>(result["key"].Value);
+        var array = Assert.IsType<object[]>(result["key"]);
         Assert.Equal(new int[] { 1 }, array[0]);
         Assert.Equal(new int[] { 2, 3, 4 }, array[1]);
     }
@@ -487,10 +488,9 @@ public class JsonStoredDataSerializerTest
         var serializer = CreateSerializer();
 
         var bytes = serializer.SerializeValue("hello", typeof(string));
-        var (value, type) = serializer.DeserializeValue(bytes);
+        var value = serializer.DeserializeValue(bytes);
 
         Assert.Equal("hello", value);
-        Assert.Equal(typeof(string), type);
     }
 
     [Fact]
@@ -499,10 +499,9 @@ public class JsonStoredDataSerializerTest
         var serializer = CreateSerializer();
 
         var bytes = serializer.SerializeValue(TestEnum.Value2, typeof(TestEnum));
-        var (value, type) = serializer.DeserializeValue(bytes);
+        var value = serializer.DeserializeValue(bytes);
 
         Assert.Equal(TestEnum.Value2, value);
-        Assert.Equal(typeof(TestEnum), type);
     }
 
     [Fact]
@@ -519,11 +518,32 @@ public class JsonStoredDataSerializerTest
         var serializer = CreateSerializer();
 
         var bytes = serializer.SerializeValue(new List<int> { 1, 2, 3 }, typeof(List<int>));
-        var (value, type) = serializer.DeserializeValue(bytes);
+        var value = serializer.DeserializeValue(bytes);
 
         var list = Assert.IsType<List<int>>(value);
         Assert.Equal(new List<int> { 1, 2, 3 }, list);
-        Assert.Equal(typeof(List<int>), type);
+    }
+
+    [Fact]
+    public void ReserializingDeserializedData_IsByteIdentical()
+    {
+        // Locks the reasoning behind deriving the type from value.GetType() at serialization time
+        // (instead of storing it): a value's runtime type equals the type it was deserialized as, so a
+        // load -> re-save round-trip (e.g. TempData.Keep()) produces identical bytes for enums,
+        // collections of enums, and the recursively-stored object[].
+        var serializer = CreateSerializer();
+        var original = new Dictionary<string, object>
+        {
+            { "enum", TestEnum.Value2 },
+            { "enumList", new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 } },
+            { "objectArray", new object[] { new int[] { 1 }, "text", Guid.Empty } },
+        };
+
+        var firstBytes = serializer.SerializeData(original);
+        var roundTripped = serializer.DeserializeData(JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(firstBytes)!);
+        var secondBytes = serializer.SerializeData(roundTripped);
+
+        Assert.Equal(firstBytes, secondBytes);
     }
 
     private class TestItem

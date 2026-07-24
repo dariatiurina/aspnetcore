@@ -189,7 +189,7 @@ internal partial class SessionCascadingValueSupplier
                     return null;
                 }
 
-                var (value, _) = _owner._serializer.DeserializeValue(bytes);
+                var value = _owner._serializer.DeserializeValue(bytes);
                 if (value is null)
                 {
                     return null;

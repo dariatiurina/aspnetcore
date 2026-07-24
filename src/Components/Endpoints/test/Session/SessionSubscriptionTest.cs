@@ -244,7 +244,7 @@ public class SessionSubscriptionTest
         _component.Value = "updated";
         await _supplier.PersistAllValues();
         Assert.True(httpContext.Session.TryGetValue(nameof(TestComponent.Value).ToLowerInvariant(), out var updatedBytes));
-        var (updatedValue, _) = _serializer.DeserializeValue(updatedBytes);
+        var updatedValue = _serializer.DeserializeValue(updatedBytes);
         Assert.Equal("updated", updatedValue);
     }
 

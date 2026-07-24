@@ -78,9 +78,9 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
             || type.IsEnum;
     }
 
-    public IDictionary<string, TempDataValue> DeserializeData(IDictionary<string, JsonElement> data)
+    public IDictionary<string, object?> DeserializeData(IDictionary<string, JsonElement> data)
     {
-        var result = new Dictionary<string, TempDataValue>(data.Count);
+        var result = new Dictionary<string, object?>(data.Count);
 
         foreach (var (key, element) in data)
         {
@@ -89,11 +89,11 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return result;
     }
 
-    private TempDataValue DeserializeEntry(JsonElement element)
+    private object? DeserializeEntry(JsonElement element)
     {
         if (element.ValueKind is JsonValueKind.Null)
         {
-            return default;
+            return null;
         }
 
         var typeName = element.GetProperty("type").GetString()!;
@@ -108,13 +108,12 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
             var index = 0;
             foreach (var item in valueElement.EnumerateArray())
             {
-                array[index++] = DeserializeEntry(item).Value;
+                array[index++] = DeserializeEntry(item);
             }
-            return new TempDataValue(array, type);
+            return array;
         }
 
-        var value = JsonSerializer.Deserialize(valueElement, type, _options);
-        return new TempDataValue(value, type);
+        return JsonSerializer.Deserialize(valueElement, type, _options);
     }
 
     [return: DynamicallyAccessedMembers(LinkerFlags.JsonSerialized)]
@@ -131,17 +130,19 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return type;
     }
 
-    public byte[] SerializeData(IDictionary<string, TempDataValue> data)
+    public byte[] SerializeData(IDictionary<string, object?> data)
     {
         using var buffer = new MemoryStream();
         using var writer = new Utf8JsonWriter(buffer);
 
         writer.WriteStartObject();
 
-        foreach (var (key, (value, type)) in data)
+        foreach (var (key, value) in data)
         {
             writer.WritePropertyName(key);
-            WriteEntry(writer, value, type);
+            // The stored type is simply the value's runtime type, computed here rather than carried
+            // alongside every value in the in-memory TempData dictionary.
+            WriteEntry(writer, value, value?.GetType());
         }
 
         writer.WriteEndObject();
@@ -198,7 +199,7 @@ internal sealed class JsonStoredDataSerializer : IStoredDataSerializer
         return buffer.ToArray();
     }
 
-    public TempDataValue DeserializeValue(ReadOnlySpan<byte> utf8Json)
+    public object? DeserializeValue(ReadOnlySpan<byte> utf8Json)
     {
         var element = JsonSerializer.Deserialize<JsonElement>(utf8Json, _options);
         return DeserializeEntry(element);
