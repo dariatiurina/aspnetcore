@@ -20,7 +20,10 @@ using Xunit.Sdk;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests;
 
+// These tests and other callers share a static enhanced-navigation suppression flag.
+// Keep their collection exclusive so another test's cleanup cannot change the active browser state.
 [CollectionDefinition(nameof(EnhancedNavigationTest), DisableParallelization = true)]
+[Collection(nameof(EnhancedNavigationTest))]
 public class EnhancedNavigationTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public EnhancedNavigationTest(

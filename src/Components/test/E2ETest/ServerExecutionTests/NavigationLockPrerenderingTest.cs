@@ -10,6 +10,9 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests;
 
+// These tests share BrowserFixture's "routing" and "navigation-prompt" profiles with RoutingTest.
+// Keep them in one sequential collection so Chrome cannot reuse or delete either profile concurrently.
+[Collection("routing-browser-profile")]
 public class NavigationLockPrerenderingTest : ServerTestBase<BasicTestAppServerSiteFixture<LockedNavigationStartup>>
 {
     public NavigationLockPrerenderingTest(

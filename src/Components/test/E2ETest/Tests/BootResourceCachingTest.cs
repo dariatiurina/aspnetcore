@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.Tests;
 
-// Disabling parallelism for these tests because of flakiness
+// These browser-cache tests are flaky when run alongside other E2E tests.
 [CollectionDefinition(nameof(BootResourceCachingTest), DisableParallelization = true)]
 [Collection(nameof(BootResourceCachingTest))]
 public partial class BootResourceCachingTest

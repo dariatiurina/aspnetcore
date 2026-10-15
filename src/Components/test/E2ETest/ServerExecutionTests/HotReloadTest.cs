@@ -12,6 +12,10 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.ServerExecutionTests;
 
+// The startup enables process-wide Hot Reload support, while other server fixtures reset that switch.
+// Keep this collection exclusive so fixture startup cannot change another running test's switch value.
+[CollectionDefinition(nameof(HotReloadTest), DisableParallelization = true)]
+[Collection(nameof(HotReloadTest))]
 public class HotReloadTest : ServerTestBase<BasicTestAppServerSiteFixture<HotReloadStartup>>
 {
     public HotReloadTest(

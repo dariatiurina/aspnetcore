@@ -11,6 +11,9 @@ using TestServer;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.Tests;
 
+// These tests share BrowserFixture's "streaming" Chrome profile with other classes.
+// Keep that profile's collection sequential so fixtures cannot reuse or delete it concurrently.
+[Collection("streaming-browser-profile")]
 public class TempDataCookieTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsNoInteractivityStartup<App>>>
 {
     private const string TempDataCookieName = ".AspNetCore.Components.TempData";

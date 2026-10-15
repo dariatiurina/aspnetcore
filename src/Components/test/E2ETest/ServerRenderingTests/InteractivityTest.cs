@@ -13,7 +13,10 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests;
 
+// These tests override a process-wide navigation switch and use shared enhanced-navigation cleanup state.
+// Keep the collection exclusive so test teardown or another server cannot reset state mid-test.
 [CollectionDefinition(nameof(InteractivityTest), DisableParallelization = true)]
+[Collection(nameof(InteractivityTest))]
 public class InteractivityTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public InteractivityTest(

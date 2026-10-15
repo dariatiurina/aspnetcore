@@ -15,6 +15,9 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests.FormHandlingTests;
 
+// These tests use shared enhanced-navigation suppression state that ServerTestBase clears during teardown.
+// Keep them with the exclusive enhanced-navigation collection to prevent cross-test cleanup races.
+[Collection("EnhancedNavigationTest")]
 public class FormWithNoBackForwardCacheTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public FormWithNoBackForwardCacheTest(

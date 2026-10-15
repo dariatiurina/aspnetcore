@@ -12,8 +12,9 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETest.Tests;
 
-// the tests share same browser Cache API, which is shared
+// These tests share browser Cache API state, so the collection must not overlap other E2E tests.
 [CollectionDefinition(nameof(WebAssemblyLazyLoadTest), DisableParallelization = true)]
+[Collection(nameof(WebAssemblyLazyLoadTest))]
 public class WebAssemblyLazyLoadTest : ServerTestBase<ToggleExecutionModeServerFixture<Program>>
 {
     // The cache name is derived from the application's base href value (in this case, '/subdir/')

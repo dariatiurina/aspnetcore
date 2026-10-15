@@ -11,6 +11,9 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests;
 
+// These tests share BrowserFixture's "streaming" Chrome profile with other classes.
+// Keep that profile's collection sequential so fixtures cannot reuse or delete it concurrently.
+[Collection("streaming-browser-profile")]
 public class RenderFragmentSerializationTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public RenderFragmentSerializationTest(

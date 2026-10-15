@@ -15,6 +15,9 @@ namespace Microsoft.AspNetCore.Components.E2ETests.Tests;
 
 // These tests are for Blazor Web implementation
 // For Blazor Server and Webassembly, check SaveStateTest.cs
+// These tests use shared enhanced-navigation suppression state that ServerTestBase clears during teardown.
+// Keep them with the exclusive enhanced-navigation collection to prevent cross-test cleanup races.
+[Collection("EnhancedNavigationTest")]
 public class StatePersistenceTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     static int _nextStreamingIdContext;

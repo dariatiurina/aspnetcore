@@ -12,6 +12,10 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests;
 
+// These tests change a process-wide navigation feature switch observed by in-process test servers.
+// Keep them exclusive so the override and per-test reset cannot change another test's behavior.
+[CollectionDefinition(nameof(RedirectionTest), DisableParallelization = true)]
+[Collection(nameof(RedirectionTest))]
 public class RedirectionTest :
     ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>,
     IClassFixture<BasicTestAppServerSiteFixture<ExternalNavigationStartup>>

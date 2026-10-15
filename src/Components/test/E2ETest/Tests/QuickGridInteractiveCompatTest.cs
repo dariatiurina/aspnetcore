@@ -17,6 +17,10 @@ namespace Microsoft.AspNetCore.Components.E2ETests.Tests;
 /// Mirrors <see cref="QuickGridInteractiveTest"/> but asserts button-based UI elements are rendered.
 /// URL still updates in both modes — only the rendered HTML element (button vs anchor) differs.
 /// </summary>
+// This test changes a process-wide QuickGrid feature switch used by in-process test servers.
+// Keep it exclusive so other servers cannot reset or observe the compatibility override.
+[CollectionDefinition(nameof(QuickGridInteractiveCompatTest), DisableParallelization = true)]
+[Collection(nameof(QuickGridInteractiveCompatTest))]
 public class QuickGridInteractiveCompatTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public QuickGridInteractiveCompatTest(

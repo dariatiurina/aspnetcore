@@ -11,7 +11,10 @@ using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Components.E2ETests.ServerRenderingTests;
 
+// This class shares the exclusive collection with tests that mutate process-wide feature switches.
+// Keep it in that collection so its server cannot overlap those overrides.
 [CollectionDefinition(nameof(InteractivityTest), DisableParallelization = true)]
+[Collection(nameof(InteractivityTest))]
 public class EndpointsServerReconnectionTest : ServerTestBase<BasicTestAppServerSiteFixture<RazorComponentEndpointsStartup<App>>>
 {
     public EndpointsServerReconnectionTest(
